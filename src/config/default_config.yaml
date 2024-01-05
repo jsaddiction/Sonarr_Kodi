@@ -1,5 +1,6 @@
 logs:
   level: INFO # Logging level: Options [DEBUG, INFO, WARNING, CRITICAL].
+  write_file: false # Write logging to file. Can be reviewed from sonarr log file page
 library:
   clean_after_update: false # Clean library after scanning.
   update_while_playing: false # Prevent library scans while playing videos. Will wait if no clients are available.
