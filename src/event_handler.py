@@ -230,7 +230,7 @@ class EventHandler:
             # Get old data
             for old_path in old_paths:
                 try:
-                    old_episodes.append(client.get_episodes_from_file(old_path))
+                    old_episodes.extend(client.get_episodes_from_file(old_path))
                 except APIError:
                     continue
 
