@@ -1,9 +1,4 @@
 #!/usr/bin/env bash
-if [ -f /config/scripts/Sonarr_Kodi/.auto_config_complete ]; then
-    echo "************ Skipping Sonarr Config************"
-    sleep infinity
-fi
-
 echo "************ Configuring Sonarr Custom Scripts *************"
 
 # Get Arr App information
@@ -41,7 +36,7 @@ done
 
 if curl -s "$arrUrl/api/v3/notification" -H "X-Api-Key: ${arrApiKey}" | jq -r .[].name | grep "Sonarr_Kodi" | read; then
     echo "************ Sonarr_Kodi already configured ************"
-    touch /config/scripts/Sonarr_Kodi/.auto_config_complete
+    sleep infinity
 else
     echo "Adding Sonarr_Kodi to custom scripts"
     # Send a command to check file path, to prevent error with adding...
@@ -54,7 +49,7 @@ else
 
     if [ -z "$error" ]; then
         echo "Script Configured Sucessfully"
-        touch /config/scripts/Sonarr_Kodi/.auto_config_complete
+        sleep infinity
         exit 0
     fi
 
