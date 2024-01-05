@@ -1,7 +1,7 @@
 #!/usr/bin/with-contenv bash
 if [ -f /config/scripts/Sonarr_Kodi/.auto_config_complete ]; then
     echo "************ Skipping Sonarr Config************"
-    exit
+    sleep infinity
 fi
 
 # Get Arr App information

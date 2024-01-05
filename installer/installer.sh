@@ -30,6 +30,14 @@ echo "************ Set Permissions ************"
 chmod 777 -R /config/scripts/Sonarr_Kodi
 
 echo "************ Configuring Sonarr *********"
-source /config/scripts/Sonarr_Kodi/installer/config_sonarr.sh
+if [ ! -d /custom-services.d ]; then
+    mkdir -p /custom-services.d
+fi
+
+if [ -f /custom-services.d/config_sonarr.sh ]; then
+	rm -rf /custom-services.d/config_sonarr.service
+fi
+
+cp /config/scripts/Sonarr_Kodi/installer/config_sonarr.sh /custom-services.d/config_sonarr.service
 
 exit
