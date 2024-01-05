@@ -31,7 +31,7 @@ arrApiTest=$(curl -s "$arrUrl/api/$arrApiVersion/system/status?apikey=$arrApiKey
 if [ "$arrApiTest" == "$arrName" ]; then
     break
 else
-    log "$arrName is not ready, sleeping until valid response..."
+    echo "$arrName is not ready, sleeping until valid response..."
     sleep 1
 fi
 done
