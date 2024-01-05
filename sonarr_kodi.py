@@ -2,7 +2,7 @@
 
 """Sonarr Kodi Main Interface"""
 import logging
-from dataclasses import asdict
+from os import environ
 from src import config_log
 from src.kodi import KodiClient, ClientConfig
 from src.environment import ENV, Events
@@ -48,10 +48,12 @@ def main() -> None:
     clients = collect_hosts(CFG, log)
     eh = EventHandler(ENV, CFG, clients)
 
-    log.debug("=====Parsed Environment========")
-    for k, v in asdict(ENV).items():
+    log.debug("=========Parsed Environment========")
+    for k, v in environ.items():
+        if "sonarr" not in k.lower():
+            continue
         log.debug("%s=%s", k, v)
-    log.debug("=====Parsed Environment========")
+    log.debug("=========Parsed Environment========")
 
     match ENV.event_type:
         case Events.ON_GRAB:
