@@ -222,7 +222,7 @@ class EventHandler:
             return
 
         for client in self.clients:
-            old_paths = self._map_path_to_kodi(self.env.episode_file_previous_paths, client.is_posix)
+            old_paths = [self._map_path_to_kodi(x, client.is_posix) for x in self.env.episode_file_previous_paths]
             series_path = self._map_path_to_kodi(self.env.series_path, client.is_posix)
             old_episodes: list[EpisodeDetails] = []
 
@@ -247,6 +247,7 @@ class EventHandler:
             for new_ep in new_episodes:
                 for old_ep in old_episodes:
                     if new_ep == old_ep:
+                        log.info("Setting watched state for %s", new_ep)
                         try:
                             client.set_episode_watched_state(old_ep.watched_state, new_ep.episode_id)
                         except APIError:
@@ -258,10 +259,10 @@ class EventHandler:
             try:
                 client.update_gui()
             except APIError:
-                log.warning("Failed to update GUI")
+                log.warning("Failed to update GUI on %s", client.name)
 
         # Send notifications
-        if not self.cfg.notifications.on_download_upgrade:
+        if not self.cfg.notifications.on_rename:
             log.info("Notifications Disabled. Skipping.")
             return
 
