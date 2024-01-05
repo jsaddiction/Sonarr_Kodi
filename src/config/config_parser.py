@@ -1,6 +1,7 @@
 """Sonarr Kodi Configuration Manager"""
 
 import os
+import sys
 import stat
 import shutil
 import yaml
@@ -38,6 +39,7 @@ def get_config() -> Config:
     usr_config = _read_config(CONFIG_PATH)
 
     if def_config == usr_config:
-        raise ValueError(f"Default config detected. Please Edit {CONFIG_PATH} before using this script.")
+        print(f"Default config detected. Please Edit {CONFIG_PATH} before using this script.")
+        sys.exit(0)
 
     return usr_config
