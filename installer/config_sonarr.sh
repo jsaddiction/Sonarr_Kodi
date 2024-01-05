@@ -41,6 +41,7 @@ done
 
 if curl -s "$arrUrl/api/v3/notification" -H "X-Api-Key: ${arrApiKey}" | jq -r .[].name | grep "Sonarr_Kodi" | read; then
     echo "************ Sonarr_Kodi already configured ************"
+    touch /config/scripts/Sonarr_Kodi/.auto_config_complete
 else
     echo "Adding Sonarr_Kodi to custom scripts"
     # Send a command to check file path, to prevent error with adding...
