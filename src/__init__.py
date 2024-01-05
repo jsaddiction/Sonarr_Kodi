@@ -16,7 +16,7 @@ def config_log(log_cfg: LogCfg) -> None:
     """Configure Logging"""
     # Establish file handler
     fh = RotatingFileHandler(
-        filename=Path(LOG_FILE_PATH, LOG_FILE_NAME), mode="a", maxBytes=1024, backupCount=5, encoding="utf-8"
+        filename=Path(LOG_FILE_PATH, LOG_FILE_NAME), mode="a", maxBytes=1_000_000, backupCount=5, encoding="utf-8"
     )
 
     # Establish stderr output
