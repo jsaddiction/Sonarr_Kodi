@@ -260,7 +260,7 @@ class KodiClient:
                 ]
             },
         }
-
+        self.log.info("Getting Kodi episodes from file %s", file_name)
         resp = self._req("VideoLibrary.GetEpisodes", params=params)
 
         if not resp.is_valid("episodes"):
@@ -377,6 +377,7 @@ class KodiClient:
         """Remove an episode from library and return it's details"""
         ep_details = self.get_episode_from_id(episode_id)
         params = {"episodeid": episode_id}
+        self.log.info("Removing Episode: %s", ep_details)
         resp = self._req("VideoLibrary.RemoveEpisode", params=params)
 
         if not resp.is_valid("OK"):

@@ -213,12 +213,14 @@ class EventHandler:
     def rename(self) -> None:
         """Renamed an episode file"""
         log = logging.getLogger("RENAME")
+        log.info("Rename Event Detected")
 
         # Optionally, wait for nfo files to be created
         new_files = [PosixPath(self.env.series_path, x) for x in self.env.episode_file_rel_paths]
         nfos = [x.with_suffix(".nfo") for x in new_files]
         nfos.append(PosixPath(self.env.series_path).joinpath("tvshow.nfo"))
         if not self._wait_for_nfos(nfos):
+            log.warning("NFO files never created, falling back to full library scan.")
             self._full_scan_and_clean()
             return
 
