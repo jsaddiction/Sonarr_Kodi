@@ -1,8 +1,10 @@
-#!/usr/bin/with-contenv bash
+#!/usr/bin/env bash
 if [ -f /config/scripts/Sonarr_Kodi/.auto_config_complete ]; then
     echo "************ Skipping Sonarr Config************"
     sleep infinity
 fi
+
+echo "************ Configuring Sonarr Custom Scripts *************"
 
 # Get Arr App information
 if [ -z "$arrUrl" ] || [ -z "$arrApiKey" ]; then
