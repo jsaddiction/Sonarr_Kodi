@@ -2,6 +2,7 @@
 
 """Sonarr Kodi Main Interface"""
 import logging
+import sys
 from os import environ
 from src import config_log
 from src.kodi import KodiClient, ClientConfig
@@ -81,8 +82,9 @@ def main() -> None:
             eh.manual_interaction_required()
         case Events.ON_TEST:
             eh.test()
-        case Events.UNKNOWN:
+        case _:
             log.critical("Event type was unknown or could not be parsed")
+            sys.exit(1)
 
 
 if __name__ == "__main__":
