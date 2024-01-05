@@ -19,7 +19,7 @@ This script is designed to intelligently manage these shortcomings with shared l
 This script is designed as an extension of Sonarr. Specifically, the dockerized version established by [linuxserver.io](https://www.linuxserver.io/). There are many ways to run Sonarr and I can't possible handle each of them. As such [linuxserver.io Sonarr](https://hub.docker.com/r/linuxserver/sonarr) is the only one I can support.
 
 - Create a directory and map it to `/config/custom-cont-init.d/`
-- Download and place [script_init.sh](https://github.com/jsaddiction/Sonarr_Kodi/script_init.sh) in `/config/custom-cont-init.d`
+- Download and place [script_init.sh](https://github.com/jsaddiction/Sonarr_Kodi/blob/main/script_init.sh) in `/config/custom-cont-init.d`
 - Start the container
 - Navigate to and edit `/config/scripts/Sonarr_Kodi/settings.yaml`
 
