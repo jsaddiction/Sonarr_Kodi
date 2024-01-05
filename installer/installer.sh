@@ -35,9 +35,11 @@ if [ ! -d /custom-services.d ]; then
 fi
 
 if [ -f /custom-services.d/config_sonarr.sh ]; then
-	rm -rf /custom-services.d/config_sonarr.service
+	rm -rf /custom-services.d/config_sonarr
 fi
 
-cp /config/scripts/Sonarr_Kodi/installer/config_sonarr.sh /custom-services.d/config_sonarr
+echo "Download AutoConfig service..."
+curl https://raw.githubusercontent.com/jsaddiction/Sonarr_Kodi/main/installer/config_sonarr.sh -o /custom-services.d/SonarrKodiAutoConfig
+echo "Done"
 
 exit
