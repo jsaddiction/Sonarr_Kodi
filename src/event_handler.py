@@ -215,9 +215,10 @@ class EventHandler:
         log = logging.getLogger("RENAME")
 
         # Optionally, wait for nfo files to be created
-        ep_nfo = PosixPath(self.env.episode_file_path).with_suffix(".nfo")
-        show_nfo = PosixPath(self.env.series_path).joinpath("tvshow.nfo")
-        if not self._wait_for_nfos([ep_nfo, show_nfo]):
+        new_files = [PosixPath(self.env.series_path, x) for x in self.env.episode_file_rel_paths]
+        nfos = [x.with_suffix(".nfo") for x in new_files]
+        nfos.append(PosixPath(self.env.series_path).joinpath("tvshow.nfo"))
+        if not self._wait_for_nfos(nfos):
             self._full_scan_and_clean()
             return
 
