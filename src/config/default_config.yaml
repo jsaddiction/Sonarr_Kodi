@@ -1,0 +1,32 @@
+logs:
+  level: INFO # Logging level: Options [DEBUG, INFO, WARNING, CRITICAL].
+library:
+  clean_after_update: false # Clean library after scanning.
+  update_while_playing: false # Prevent library scans while playing videos. Will wait if no clients are available.
+  full_scan_fallback: false # Fallback to full library scan if a failure occur, clean_after_update should also be set.
+  wait_for_nfo: false # Set to true if kodi is configured with a "local files only" scraper
+  nfo_timeout_minuets: 10 # Maximum amount of time in minuets to wait for NFO file creation.
+  path_mapping: # List of path mappings.  Helpful if sonarr and kodi mount directories differently.
+    - sonarr: /mnt/tvshows # Directory containing series folders. From sonarr's perspective
+      kodi: /storage/mnt/tvshows # Directory containing series folders. From kodi's perspective
+notifications: # Global Notification settings.  Display sonarr events within kodi UI.
+  on_grab: true
+  on_download_new: true
+  on_download_upgrade: false
+  on_rename: false
+  on_delete: false
+  on_series_add: false
+  on_series_delete: false
+  on_health_issue: true
+  on_health_restored: false
+  on_application_update: true
+  on_manual_interaction_required: true
+  on_test: true # Notify on test events. Helpful when troubleshooting Kodi connections
+hosts: # List of kodi instances to manage (assumes each host accesses a shared library)
+  - name: Default # Generic name of the instance. Only used within logs
+    host: 127.0.0.1 # IP address of the instance.
+    port: 8080 # Port where the JSON-RPC interface is listening. Generally 8080.
+    user: # Username
+    password: # Password
+    enabled: false # Enable/disable this host. Offline hosts slow this script down, disable them here.
+    priority: 0 # Used to sort hosts. Lower numbers = higher priority
