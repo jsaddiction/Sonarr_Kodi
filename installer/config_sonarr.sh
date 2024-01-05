@@ -53,6 +53,7 @@ else
 
     if [ -z "$error" ]; then
         echo "Script Configured Sucessfully"
+        touch /config/scripts/Sonarr_Kodi/.auto_config_complete
         exit 0
     fi
 
