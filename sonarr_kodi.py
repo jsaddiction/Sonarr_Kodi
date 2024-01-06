@@ -56,6 +56,10 @@ def main() -> None:
         log.debug("%s=%s", k, v)
     log.debug("=========Parsed Environment========")
 
+    if len(clients) == 0:
+        log.critical("Unable to modify library. No active clients.")
+        return
+
     match ENV.event_type:
         case Events.ON_GRAB:
             eh.grab()
