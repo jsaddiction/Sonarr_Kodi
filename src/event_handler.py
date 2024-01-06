@@ -250,9 +250,9 @@ class EventHandler:
             for new_ep in new_episodes:
                 for old_ep in old_episodes:
                     if new_ep == old_ep:
-                        log.info("Setting watched state for %s", new_ep)
+                        old_ep.episode_id = new_ep.episode_id
                         try:
-                            client.set_episode_watched_state(old_ep.watched_state, new_ep.episode_id)
+                            client.set_episode_watched_state(old_ep)
                         except APIError:
                             log.warning("Failed to set episode watched state for %s", new_ep)
                             break
