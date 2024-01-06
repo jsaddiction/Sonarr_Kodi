@@ -139,6 +139,11 @@ class EpisodeDetails:
     episode: str
     watched_state: WatchedState
 
+    def __post_init__(self):
+        """sanitize episode title"""
+        if "-" in self.episode_title:
+            self.episode_title = self.episode_title.rsplit("-", 1)[-1]
+
     def __hash__(self):
         return hash((self.show_id, self.season, self.episode))
 
