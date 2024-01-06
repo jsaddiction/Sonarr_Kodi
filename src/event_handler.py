@@ -70,7 +70,7 @@ class EventHandler:
 
         files_found = set()
         start = datetime.now()
-        while nfos:
+        while len(nfos) > len(files_found):
             elapsed = datetime.now() - start
 
             for file in nfos:
