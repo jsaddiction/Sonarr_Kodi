@@ -209,10 +209,10 @@ class KodiClient:
             error=error,
         )
 
-    def set_episode_watched_state(self, episode: EpisodeDetails) -> None:
+    def set_episode_watched_state(self, episode: EpisodeDetails, new_ep_id: int) -> None:
         """Set Episode Watched State"""
         params = {
-            "episodeid": episode.episode_id,
+            "episodeid": new_ep_id,
             "playcount": episode.watched_state.play_count,
             "lastplayed": episode.watched_state.last_played_str,
             "dateadded": episode.watched_state.date_added_str,
