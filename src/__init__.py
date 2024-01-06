@@ -18,11 +18,11 @@ def config_log(log_cfg: LogCfg) -> None:
     fh = RotatingFileHandler(
         filename=Path(LOG_FILE_PATH, LOG_FILE_NAME), mode="a", maxBytes=1_000_000, backupCount=5, encoding="utf-8"
     )
-    fh.setFormatter(FILE_LOG_FMT)
+    fh.setFormatter(logging.Formatter(FILE_LOG_FMT))
 
     # Establish stderr output
     sh = logging.StreamHandler()
-    sh.setFormatter(CONSOLE_LOG_FMT)
+    sh.setFormatter(logging.Formatter(CONSOLE_LOG_FMT))
 
     # Build handler list based on config
     handlers = [sh]
