@@ -118,6 +118,7 @@ class EventHandler:
         ep_nfo = PosixPath(self.env.episode_file_path).with_suffix(".nfo")
         show_nfo = PosixPath(self.env.series_path).joinpath("tvshow.nfo")
         if not self._wait_for_nfos([ep_nfo, show_nfo]):
+            log.warning("NFO files never created, falling back to full library scan.")
             self._full_scan_and_clean()
             return
 
@@ -252,7 +253,11 @@ class EventHandler:
                     log.warning("Failed to remove old episode %s", old_episode)
 
             # Scan new content
-            new_episodes = client.scan_series_dir(series_path)
+            try:
+                new_episodes = client.scan_series_dir(series_path)
+            except (APIError, ScanTimeout):
+                log.warning("Failed to scan, Skipping this client.")
+                continue
 
             # Reapply metadata to new episodes
             log.info("Applying old watched states")
