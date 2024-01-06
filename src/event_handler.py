@@ -102,7 +102,7 @@ class EventHandler:
     def _notify_clients(self, title: str, msg: str) -> None:
         """Send notification to all clients"""
         for client in self.clients:
-            self.log.info("Sending Notification %s : %s to %s", title, msg, client.name)
+            self.log.info("Sending Notification to %s : %s %s", client.name, title, msg)
             client.notify(msg, title)
 
     def grab(self) -> None:
