@@ -204,6 +204,7 @@ class EventHandler:
                         if not old_ep.watched_state.is_watched:
                             self.log.info("Not setting watched state on unwatched episode")
                             continue
+                        self.log.info("Setting Watched state of %s", new_ep)
                         try:
                             client.set_episode_watched_state(old_ep, new_ep.episode_id)
                         except APIError:
