@@ -6,7 +6,7 @@ library:
   update_while_playing: false # Prevent library scans while playing videos. Will wait if no clients are available.
   full_scan_fallback: false # Fallback to full library scan if a failure occur, clean_after_update should also be set.
   wait_for_nfo: false # Set to true if kodi is configured with a "local files only" scraper
-  nfo_timeout_minuets: 10 # Maximum amount of time in minuets to wait for NFO file creation.
+  nfo_timeout_minuets: 3 # Maximum amount of time in minuets to wait for NFO file creation. Per file
   path_mapping: # List of path mappings.  Helpful if sonarr and kodi mount directories differently.
     - sonarr: /mnt/tvshows # Directory containing series folders. From sonarr's perspective
       kodi: /storage/mnt/tvshows # Directory containing series folders. From kodi's perspective

@@ -67,7 +67,7 @@ class EventHandler:
         self.log.info("Waiting for NFO Files. %s", [x.name for x in nfos])
 
         delay = 1
-        max_sec = self.cfg.library.nfo_timeout_minuets * 60
+        max_sec = (self.cfg.library.nfo_timeout_minuets * len(nfos)) * 60
         start = datetime.now()
 
         for file in nfos:
