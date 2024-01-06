@@ -111,11 +111,6 @@ class EventHandler:
             log.warning("Notifications disabled. Skipping")
             return
 
-        for ep_num, ep_title in zip(self.env.release_episode_numbers, self.env.release_episode_titles):
-            msg = f"{self.env.series_title} - S{self.env.release_season_number:02}E{ep_num:02} - {ep_title}"
-            title = "Sonarr - Attempting Download"
-            self._notify_clients(title, msg)
-
         # Send notification for each attempted download
         for ep_num, ep_title in zip(self.env.release_episode_numbers, self.env.release_episode_titles):
             msg = f"{self.env.series_title} - S{self.env.release_season_number:02}E{ep_num:02} - {ep_title}"
