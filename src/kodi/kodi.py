@@ -352,7 +352,7 @@ class KodiClient:
             show_dir = show.file.rstrip("/") + "/"
             params = {"showdialogs": False, "directory": show_dir}
             resp = self._req("VideoLibrary.Scan", params=params)
-            if not resp.is_valid("Ok"):
+            if not resp.is_valid("OK"):
                 self.log.warning("Failed to scan %s", show_dir)
                 continue
             self._wait_for_video_scan()
@@ -363,7 +363,7 @@ class KodiClient:
             params = {"showdialogs": False}
             resp = self._req("VideoLibrary.Scan", params=params)
             self._wait_for_video_scan()
-            if not resp.is_valid("Ok"):
+            if not resp.is_valid("OK"):
                 self.log.warning("Failed to scan video library")
                 return
             self.library_scanned = True
