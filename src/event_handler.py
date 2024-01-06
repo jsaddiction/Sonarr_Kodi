@@ -80,7 +80,6 @@ class EventHandler:
 
                 # record files when they propagate
                 if file.exists():
-                    self.log.info("Found %s", file.name)
                     files_found.add(file)
 
                 # return false if we timed out
