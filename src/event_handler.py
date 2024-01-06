@@ -180,6 +180,7 @@ class EventHandler:
 
             # Remove old episodes
             deleted_episodes: list[EpisodeDetails] = []
+            log.info("Removing episodes from database.")
             for ep in [x for x in curr_episodes if x.file in old_ep_paths]:
                 try:
                     client.remove_episode(ep.episode_id)
