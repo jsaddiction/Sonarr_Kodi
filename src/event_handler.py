@@ -68,22 +68,29 @@ class EventHandler:
         max_sec = (self.cfg.library.nfo_timeout_minuets * len(nfos)) * 60
         self.log.info("Waiting up to %s minuets for %s NFO Files.", max_sec / 60, len(nfos))
 
+        files_found = set()
         start = datetime.now()
-        for file in nfos:
-            while True:
-                elapsed = datetime.now() - start
+        while nfos:
+            elapsed = datetime.now() - start
 
-                # Break out of loop if file found
+            for file in nfos:
+                # skip files already found
+                if file in files_found:
+                    continue
+
+                # record files when they propagate
                 if file.exists():
                     self.log.info("Found %s", file.name)
-                    break
+                    files_found.add(file)
 
-                # Fail if timeout reached
-                if elapsed.total_seconds() >= max_sec:
-                    self.log.warning("Waited %s for %s. Giving Up.", elapsed, file.name)
+                # return false if we timed out
+                elif elapsed.total_seconds() >= max_sec:
+                    self.log.warning("Waited %s. %s NFO files not found.", elapsed, len(nfos))
+                    self.log.warning("Missing NFO files. [%s]", ", ".join(nfos))
                     return False
 
-                sleep(delay)
+            sleep(delay)
+
         self.log.info("All required NFO files were found after %s", elapsed)
         return True
 
