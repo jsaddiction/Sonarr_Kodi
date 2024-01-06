@@ -221,7 +221,6 @@ class KodiClient:
                 "total": episode.watched_state.resume.total,
             },
         }
-        self.log.info("Setting watched state for %s", episode)
         resp = self._req("VideoLibrary.SetEpisodeDetails", params=params)
 
         print(resp)

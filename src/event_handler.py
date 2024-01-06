@@ -255,6 +255,7 @@ class EventHandler:
             new_episodes = client.scan_series_dir(series_path)
 
             # Reapply metadata to new episodes
+            log.info("Applying old watched states")
             for new_ep in new_episodes:
                 for old_ep in old_episodes:
                     if new_ep == old_ep:
