@@ -143,7 +143,7 @@ class EpisodeDetails:
     def sanitize_ep_title(raw_title: str) -> str:
         """Static method to sanitize episode title"""
         if "-" in raw_title:
-            return raw_title.rsplit("-", 1)[-1]
+            return raw_title.rsplit("-", 1)[-1].strip()
         return raw_title
 
     def __hash__(self):
