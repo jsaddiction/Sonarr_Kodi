@@ -124,9 +124,9 @@ class EventHandler:
 
         # Scan new episode file into kodi library
         for client in self.clients:
-            mapped_series_dir = self._map_path_to_kodi(self.env.series_path, client.is_posix)
+            series_path = self._map_path_to_kodi(self.env.series_path, client.is_posix)
             try:
-                new_episodes = client.scan_series_dir(mapped_series_dir)
+                new_episodes = client.scan_series_dir(series_path)
             except (APIError, ScanTimeout):
                 log.warning("Failed to scan. Skipping this client.")
                 continue
@@ -134,7 +134,7 @@ class EventHandler:
 
         # Exit if no episodes were added to library
         if len(new_episodes) == 0:
-            log.warning("No new episodes found in %s.", mapped_series_dir)
+            log.warning("No new episodes found in %s.", series_path)
             self._full_scan_and_clean()
         else:
             log.info("Scan found %s new episode[s].", len(new_episodes))
