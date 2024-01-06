@@ -272,6 +272,7 @@ class EventHandler:
 
         for client in self.clients:
             for episode in new_episodes:
+                log.info(episode.__repr__())
                 client.notify(title="Sonarr - Renamed Episode", msg=episode)
 
     def delete(self) -> None:
