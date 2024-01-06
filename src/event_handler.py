@@ -236,6 +236,7 @@ class EventHandler:
             old_episodes: list[EpisodeDetails] = []
 
             # Get old data
+            log.info("Getting current info from Kodi")
             for old_path in old_paths:
                 try:
                     old_episodes.extend(client.get_episodes_from_file(old_path))
@@ -243,6 +244,7 @@ class EventHandler:
                     continue
 
             # Remove old episodes
+            log.info("Removing episodes from database.")
             for old_episode in old_episodes:
                 try:
                     client.remove_episode(old_episode.episode_id)
