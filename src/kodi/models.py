@@ -139,10 +139,12 @@ class EpisodeDetails:
     episode: str
     watched_state: WatchedState
 
-    def __post_init__(self):
-        """sanitize episode title"""
-        if "-" in self.episode_title:
-            self.episode_title = self.episode_title.rsplit("-", 1)[-1]
+    @staticmethod
+    def sanitize_ep_title(raw_title: str) -> str:
+        """Static method to sanitize episode title"""
+        if "-" in raw_title:
+            return raw_title.rsplit("-", 1)[-1]
+        return raw_title
 
     def __hash__(self):
         return hash((self.show_id, self.season, self.episode))
@@ -153,4 +155,4 @@ class EpisodeDetails:
         return self.show_id == other.show_id and self.season == other.season and self.episode == other.episode
 
     def __str__(self) -> str:
-        return f"{self.show_title} - S{self.season:02}E{self.episode:02} - {self.episode_title}"
+        return f"{self.show_title} - S{self.season:02}E{self.episode:02} - {self.sanitize_ep_title(self.episode_title)}"
