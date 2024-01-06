@@ -94,6 +94,11 @@ class EventHandler:
         self.log.info("All required NFO files were found after %s", elapsed)
         return True
 
+    def _update_guis(self) -> None:
+        """Update GUI for all clients not scanned"""
+        for client in [x for x in self.clients if not x.library_scanned]:
+            client.update_gui()
+
     def grab(self) -> None:
         """Grab Events"""
         log = logging.getLogger("GRAB")
@@ -140,12 +145,7 @@ class EventHandler:
             log.info("Scan found %s new episode[s].", len(new_episodes))
 
         # Update GUI on clients not previously scanned and not playing
-        for client in [x for x in self.clients if not x.library_scanned and not x.is_playing]:
-            try:
-                client.update_gui()
-            except APIError as e:
-                log.warning("Failed to update GUI. Error: %s", e)
-                continue
+        self._update_guis()
 
         # Notify clients
         if not self.cfg.notifications.on_download_new:
@@ -210,11 +210,7 @@ class EventHandler:
                 break
 
         # Update GUI on remaining clients
-        for client in [x for x in self.clients if not x.library_scanned]:
-            try:
-                client.update_gui()
-            except APIError:
-                log.warning("Failed to update GUI")
+        self._update_guis()
 
         # Send notifications
         if not self.cfg.notifications.on_download_upgrade:
@@ -282,11 +278,7 @@ class EventHandler:
                 break
 
         # Update GUI on remaining clients
-        for client in [x for x in self.clients if not x.library_scanned]:
-            try:
-                client.update_gui()
-            except APIError:
-                log.warning("Failed to update GUI on %s", client.name)
+        self._update_guis()
 
         # Send notifications
         if not self.cfg.notifications.on_rename:
@@ -316,11 +308,8 @@ class EventHandler:
 
             break
 
-        for client in [x for x in self.clients if not x.library_scanned]:
-            try:
-                client.update_gui()
-            except APIError:
-                log.warning("Failed to update GUI")
+        # Update remaining guis
+        self._update_guis()
 
         # Send notifications
         if not self.cfg.notifications.on_rename:

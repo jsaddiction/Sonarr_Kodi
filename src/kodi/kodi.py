@@ -410,7 +410,7 @@ class KodiClient:
         self.log.info("Updating GUI...")
         resp = self._req("VideoLibrary.Scan", params=params)
         if not resp.is_valid("OK"):
-            raise APIError("Invalid Response")
+            self.log.info("Failed to update GUI.")
 
     def notify(self, msg: str, title: str) -> None:
         """Send GUI Notification to Kodi Host"""
