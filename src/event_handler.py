@@ -96,11 +96,13 @@ class EventHandler:
     def _update_guis(self) -> None:
         """Update GUI for all clients not scanned"""
         for client in [x for x in self.clients if not x.library_scanned]:
+            self.log.info("Updating GUI on %s", client.name)
             client.update_gui()
 
     def _notify_clients(self, title: str, msg: str) -> None:
         """Send notification to all clients"""
         for client in self.clients:
+            self.log.info("Sending Notification %s : %s to %s", title, msg, client.name)
             client.notify(msg, title)
 
     def grab(self) -> None:
@@ -170,7 +172,7 @@ class EventHandler:
                 return
 
             # Get current data in library
-            self.log.info("Getting current episode data")
+            self.log.info("Storing current episode data")
             try:
                 curr_episodes = client.get_episodes_from_dir(series_path)
             except APIError:
@@ -188,6 +190,7 @@ class EventHandler:
                 deleted_episodes.append(ep)
 
             # Scan for new files
+            self.log.info("Scanning %s with %s", series_path, client.name)
             try:
                 new_episodes = client.scan_series_dir(series_path)
             except (APIError, ScanTimeout):

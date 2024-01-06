@@ -323,13 +323,13 @@ class KodiClient:
             old_episodes = []
 
         # Scan the Directory
-        self.log.info("Scanning %s", directory)
+        self.log.debug("Scanning %s", directory)
         resp = self._req("VideoLibrary.Scan", params=params)
         if not resp.is_valid("OK"):
             raise APIError("Invalid Response")
 
         # Wait for library to scan
-        self.log.info("Waiting for scan to complete.")
+        self.log.debug("Waiting for scan to complete.")
         self._wait_for_video_scan()
         self.library_scanned = True
 
@@ -409,7 +409,6 @@ class KodiClient:
     def update_gui(self) -> None:
         """Update GUI|Widgets by scanning a non existent path"""
         params = {"directory": "/does_not_exist/", "showdialogs": False}
-        self.log.info("Updating GUI...")
         resp = self._req("VideoLibrary.Scan", params=params)
         if not resp.is_valid("OK"):
             self.log.info("Failed to update GUI.")
@@ -422,7 +421,6 @@ class KodiClient:
             "displaytime": 5000,
             "image": "https://github.com/jsaddiction/KodiLibrarian/raw/main/img/Sonarr.png",
         }
-        self.log.info("Sending Notification: %s :: %s", title, msg)
         resp = self._req("GUI.ShowNotification", params)
         if not resp.is_valid("OK"):
             self.log.warning("Failed to send notification")
