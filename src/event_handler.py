@@ -206,6 +206,9 @@ class EventHandler:
                             log.warning("Failed to set episode watched state for %s", new_ep)
                             break
 
+            if client.library_scanned:
+                break
+
         # Update GUI on remaining clients
         for client in [x for x in self.clients if not x.library_scanned]:
             try:
