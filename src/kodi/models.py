@@ -111,7 +111,7 @@ class WatchedState:
         """If this state represents watched"""
         if self.play_count is None:
             return False
-        if self.last_played:
+        if not self.last_played:
             return False
 
         return bool(self.last_played) and self.play_count > 0
