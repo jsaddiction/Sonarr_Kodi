@@ -189,14 +189,18 @@ class EventHandler:
                 deleted_episodes.append(ep)
 
             # Scan for new files
-            new_episodes = client.scan_series_dir(series_path)
+            try:
+                new_episodes = client.scan_series_dir(series_path)
+            except (APIError, ScanTimeout):
+                log.warning("Failed to scan %s", series_path)
+                continue
 
             # Reapply metadata to new episodes
             for new_ep in new_episodes:
                 for old_ep in deleted_episodes:
                     if new_ep == old_ep:
                         try:
-                            client.set_episode_watched_state(old_ep.watched_state, new_ep.episode_id)
+                            client.set_episode_watched_state(old_ep, new_ep.episode_id)
                         except APIError:
                             log.warning("Failed to set episode watched state for %s", new_ep)
                             break
