@@ -304,7 +304,11 @@ class KodiClient:
         if not resp.is_valid("episodedetails"):
             raise APIError(f"Invalid response while finding episode details for id: {episode_id}")
 
-        return self._parse_ep_details([resp.result["episodedetails"]])
+        ep_details_lst = self._parse_ep_details([resp.result["episodedetails"]])
+        if len(ep_details_lst) == 1:
+            return ep_details_lst[0]
+
+        return None
 
     def scan_series_dir(self, directory: str) -> list[EpisodeDetails]:
         """Scan a directory returning new episodes"""
