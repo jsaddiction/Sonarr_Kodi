@@ -106,9 +106,9 @@ class EventHandler:
 
     def grab(self) -> None:
         """Grab Events"""
-        log = logging.getLogger("GRAB")
+        self.log.info("Grab Event Detected")
         if not self.cfg.notifications.on_grab:
-            log.warning("Notifications disabled. Skipping")
+            self.log.warning("Notifications disabled. Skipping")
             return
 
         # Send notification for each attempted download
@@ -119,14 +119,14 @@ class EventHandler:
 
     def download_new(self) -> None:
         """Downloaded a new episode"""
-        log = logging.getLogger("NEW_EPISODE")
+        self.log.info("Download New Episode Event Detected")
         new_episodes = []
 
         # optionally, wait for NFO files to generate
         ep_nfo = PosixPath(self.env.episode_file_path).with_suffix(".nfo")
         show_nfo = PosixPath(self.env.series_path).joinpath("tvshow.nfo")
         if not self._wait_for_nfos([ep_nfo, show_nfo]):
-            log.warning("NFO files never created, falling back to full library scan.")
+            self.log.warning("NFO files never created, falling back to full library scan.")
             self._full_scan_and_clean()
             return
 
@@ -136,16 +136,16 @@ class EventHandler:
             try:
                 new_episodes = client.scan_series_dir(series_path)
             except (APIError, ScanTimeout):
-                log.warning("Failed to scan. Skipping this client.")
+                self.log.warning("Failed to scan. Skipping this client.")
                 continue
             break
 
         # Exit if no episodes were added to library
         if len(new_episodes) == 0:
-            log.warning("No new episodes found in %s.", series_path)
+            self.log.warning("No new episodes found in %s.", series_path)
             self._full_scan_and_clean()
         else:
-            log.info("Scan found %s new episode[s].", len(new_episodes))
+            self.log.info("Scan found %s new episode[s].", len(new_episodes))
 
         # Update GUI on clients not previously scanned and not playing
         self._update_guis()
@@ -158,8 +158,7 @@ class EventHandler:
 
     def download_upgrade(self) -> None:
         """Downloaded an upgraded episode file"""
-        log = logging.getLogger("UPGRADE_EPISODE")
-
+        self.log.info("Upgrade Episode Event Detected")
         for client in self.clients:
             series_path = self._map_path_to_kodi(self.env.series_path, client.is_posix)
             old_ep_paths = [self._map_path_to_kodi(x, client.is_posix) for x in self.env.deleted_paths]
@@ -172,7 +171,7 @@ class EventHandler:
                 return
 
             # Get current data in library
-            log.info("Getting current episode data")
+            self.log.info("Getting current episode data")
             try:
                 curr_episodes = client.get_episodes_from_dir(series_path)
             except APIError:
@@ -180,12 +179,12 @@ class EventHandler:
 
             # Remove old episodes
             deleted_episodes: list[EpisodeDetails] = []
-            log.info("Removing episodes from database.")
+            self.log.info("Removing episodes from database.")
             for ep in [x for x in curr_episodes if x.file in old_ep_paths]:
                 try:
                     client.remove_episode(ep.episode_id)
                 except APIError:
-                    log.warning("Failed to remove %s", ep)
+                    self.log.warning("Failed to remove %s", ep)
                     continue
                 deleted_episodes.append(ep)
 
@@ -193,7 +192,7 @@ class EventHandler:
             try:
                 new_episodes = client.scan_series_dir(series_path)
             except (APIError, ScanTimeout):
-                log.warning("Failed to scan %s", series_path)
+                self.log.warning("Failed to scan %s", series_path)
                 continue
 
             # Reapply metadata to new episodes
@@ -203,7 +202,7 @@ class EventHandler:
                         try:
                             client.set_episode_watched_state(old_ep, new_ep.episode_id)
                         except APIError:
-                            log.warning("Failed to set episode watched state for %s", new_ep)
+                            self.log.warning("Failed to set episode watched state for %s", new_ep)
                             break
 
             if client.library_scanned:
@@ -220,15 +219,14 @@ class EventHandler:
 
     def rename(self) -> None:
         """Renamed an episode file"""
-        log = logging.getLogger("RENAME")
-        log.info("Rename Event Detected")
+        self.log.info("File Rename Event Detected")
 
         # Optionally, wait for nfo files to be created
         new_files = [PosixPath(self.env.series_path, x) for x in self.env.episode_file_rel_paths]
         nfos = [x.with_suffix(".nfo") for x in new_files]
         nfos.append(PosixPath(self.env.series_path).joinpath("tvshow.nfo"))
         if not self._wait_for_nfos(nfos):
-            log.warning("NFO files never created, falling back to full library scan.")
+            self.log.warning("NFO files never created, falling back to full library scan.")
             self._full_scan_and_clean()
             return
 
@@ -238,7 +236,7 @@ class EventHandler:
             old_episodes: list[EpisodeDetails] = []
 
             # Get old data
-            log.info("Getting current info from Kodi")
+            self.log.info("Getting current info from Kodi")
             for old_path in old_paths:
                 try:
                     old_episodes.extend(client.get_episodes_from_file(old_path))
@@ -246,29 +244,29 @@ class EventHandler:
                     continue
 
             # Remove old episodes
-            log.info("Removing episodes from database.")
+            self.log.info("Removing episodes from database.")
             for old_episode in old_episodes:
                 try:
                     client.remove_episode(old_episode.episode_id)
                 except APIError:
-                    log.warning("Failed to remove old episode %s", old_episode)
+                    self.log.warning("Failed to remove old episode %s", old_episode)
 
             # Scan new content
             try:
                 new_episodes = client.scan_series_dir(series_path)
             except (APIError, ScanTimeout):
-                log.warning("Failed to scan, Skipping this client.")
+                self.log.warning("Failed to scan, Skipping this client.")
                 continue
 
             # Reapply metadata to new episodes
-            log.info("Applying old watched states")
+            self.log.info("Applying old watched states")
             for new_ep in new_episodes:
                 for old_ep in old_episodes:
                     if new_ep == old_ep:
                         try:
                             client.set_episode_watched_state(old_ep, new_ep.episode_id)
                         except APIError:
-                            log.warning("Failed to set episode watched state for %s", new_ep)
+                            self.log.warning("Failed to set episode watched state for %s", new_ep)
                             break
 
             if client.library_scanned:
@@ -285,12 +283,11 @@ class EventHandler:
 
     def delete(self) -> None:
         """Remove an episode"""
-        log = logging.getLogger("DELETE")
-
+        self.log.info("Delete File Event Detected")
         # Ignore delete event if upgrade is pending
         deleted_reason = self.env.episode_file_delete_reason
         if deleted_reason.lower() == "upgrade":
-            log.info("Ignoring this delete. It's part of an upgrade.")
+            self.log.info("Ignoring this delete. It's part of an upgrade.")
             return
 
         for client in self.clients:
@@ -300,7 +297,7 @@ class EventHandler:
                 try:
                     client.remove_episode(episode.episode_id)
                 except APIError:
-                    log.warning("Failed to remove %s", deleted_file)
+                    self.log.warning("Failed to remove %s", deleted_file)
 
             if client.library_scanned:
                 break
