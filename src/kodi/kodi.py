@@ -385,6 +385,8 @@ class KodiClient:
         if not resp.is_valid("OK"):
             raise APIError(f"Failed to remove episode id: {episode_id}")
 
+        self.library_scanned = True
+
         return ep_details
 
     def _wait_for_video_scan(self) -> None:
@@ -423,5 +425,5 @@ class KodiClient:
         self.log.info("Sending Notification: %s :: %s", title, msg)
         resp = self._req("GUI.ShowNotification", params)
         if not resp.is_valid("OK"):
-            self.log.warning("Failed to send notification: %s :: %s", title, msg)
+            self.log.warning("Failed to send notification")
             return

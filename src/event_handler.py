@@ -99,6 +99,11 @@ class EventHandler:
         for client in [x for x in self.clients if not x.library_scanned]:
             client.update_gui()
 
+    def _notify_clients(self, title: str, msg: str) -> None:
+        """Send notification to all clients"""
+        for client in self.clients:
+            client.notify(msg, title)
+
     def grab(self) -> None:
         """Grab Events"""
         log = logging.getLogger("GRAB")
@@ -106,13 +111,16 @@ class EventHandler:
             log.warning("Notifications disabled. Skipping")
             return
 
-        # Loop through each client
-        for client in self.clients:
-            # Send notification for each attempted download
-            for ep_num, ep_title in zip(self.env.release_episode_numbers, self.env.release_episode_titles):
-                msg = f"{self.env.series_title} - S{self.env.release_season_number:02}E{ep_num:02} - {ep_title}"
-                title = "Sonarr - Attempting Download"
-                client.notify(msg=msg, title=title)
+        for ep_num, ep_title in zip(self.env.release_episode_numbers, self.env.release_episode_titles):
+            msg = f"{self.env.series_title} - S{self.env.release_season_number:02}E{ep_num:02} - {ep_title}"
+            title = "Sonarr - Attempting Download"
+            self._notify_clients(title, msg)
+
+        # Send notification for each attempted download
+        for ep_num, ep_title in zip(self.env.release_episode_numbers, self.env.release_episode_titles):
+            msg = f"{self.env.series_title} - S{self.env.release_season_number:02}E{ep_num:02} - {ep_title}"
+            title = "Sonarr - Attempting Download"
+            self._notify_clients(msg=msg, title=title)
 
     def download_new(self) -> None:
         """Downloaded a new episode"""
@@ -148,13 +156,10 @@ class EventHandler:
         self._update_guis()
 
         # Notify clients
-        if not self.cfg.notifications.on_download_new:
-            log.info("Notifications Disabled. Skipping.")
-            return
-
-        for client in self.clients:
+        if self.cfg.notifications.on_download_new:
+            title = "Sonarr - Downloaded New Episode"
             for episode in new_episodes:
-                client.notify(title="Sonarr - Downloaded New Episode", msg=episode)
+                self._notify_clients(title=title, msg=episode)
 
     def download_upgrade(self) -> None:
         """Downloaded an upgraded episode file"""
@@ -212,14 +217,11 @@ class EventHandler:
         # Update GUI on remaining clients
         self._update_guis()
 
-        # Send notifications
-        if not self.cfg.notifications.on_download_upgrade:
-            log.info("Notifications Disabled. Skipping.")
-            return
-
-        for client in self.clients:
+        # Notify clients
+        if self.cfg.notifications.on_download_upgrade:
+            title = "Sonarr - Upgraded Episode"
             for episode in new_episodes:
-                client.notify(title="Sonarr - Upgraded Episode", msg=episode)
+                self._notify_clients(title=title, msg=episode)
 
     def rename(self) -> None:
         """Renamed an episode file"""
@@ -280,19 +282,17 @@ class EventHandler:
         # Update GUI on remaining clients
         self._update_guis()
 
-        # Send notifications
-        if not self.cfg.notifications.on_rename:
-            log.info("Notifications Disabled. Skipping.")
-            return
-
-        for client in self.clients:
+        # Notify clients
+        if self.cfg.notifications.on_rename:
+            title = "Sonarr - Renamed Episode"
             for episode in new_episodes:
-                client.notify(title="Sonarr - Renamed Episode", msg=episode)
+                self._notify_clients(title=title, msg=episode)
 
     def delete(self) -> None:
         """Remove an episode"""
         log = logging.getLogger("DELETE")
 
+        # Ignore delete event if upgrade is pending
         deleted_reason = self.env.episode_file_delete_reason
         if deleted_reason.lower() == "upgrade":
             log.info("Ignoring this delete. It's part of an upgrade.")
@@ -300,24 +300,24 @@ class EventHandler:
 
         for client in self.clients:
             deleted_file = self._map_path_to_kodi(self.env.episode_file_path, client.is_posix)
-            try:
-                episode: EpisodeDetails = client.get_episodes_from_file(deleted_file)
-                client.remove_episode(episode.episode_id)
-            except APIError:
-                log.warning("Failed to remove %s", deleted_file)
+            episodes: list[EpisodeDetails] = client.get_episodes_from_file(deleted_file)
+            for episode in episodes:
+                try:
+                    client.remove_episode(episode.episode_id)
+                except APIError:
+                    log.warning("Failed to remove %s", deleted_file)
 
-            break
+            if client.library_scanned:
+                break
 
         # Update remaining guis
         self._update_guis()
 
-        # Send notifications
-        if not self.cfg.notifications.on_rename:
-            log.info("Notifications Disabled. Skipping.")
-            return
-
-        for client in self.clients:
-            client.notify(title="Sonarr - Deleted Episode", msg=episode)
+        # Notify clients
+        if self.cfg.notifications.on_delete:
+            title = "Sonarr - Deleted Episode"
+            for episode in episodes:
+                self._notify_clients(title=title, msg=episode)
 
     def series_add(self) -> None:
         """Adding a Series"""
