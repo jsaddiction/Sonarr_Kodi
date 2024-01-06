@@ -140,7 +140,7 @@ class EpisodeDetails:
     watched_state: WatchedState
 
     def __hash__(self):
-        return hash(self.episode_id)
+        return hash((self.show_id, self.season, self.episode))
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, EpisodeDetails):
