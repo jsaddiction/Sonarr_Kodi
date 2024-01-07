@@ -40,6 +40,7 @@ class SonarrEnvironment:
     series_title: str = field(default=None, metadata={"var": "Sonarr_Series_Title"})
     series_year: int = field(default=None, metadata={"var": "Sonarr_Series_Year"})
     series_path: str = field(default=None, metadata={"var": "Sonarr_Series_Path"})
+    series_deleted_files: bool = field(default=None, metadata={"var": "Sonarr_Series_DeletedFiles"})
     release_season_number: int = field(default=None, metadata={"var": "Sonarr_Release_SeasonNumber"})
     release_episode_numbers: list[int] = field(default_factory=list, metadata={"var": "Sonarr_Release_EpisodeNumbers"})
     release_episode_titles: list[str] = field(default_factory=list, metadata={"var": "Sonarr_Release_EpisodeTitles"})

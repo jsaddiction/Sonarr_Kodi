@@ -334,6 +334,21 @@ class EventHandler:
         """Deleting a Series"""
         self.log.info("Series Delete Event Detected")
 
+        # Removing episodes
+        if self.env.series_deleted_files:
+            for client in self.clients:
+                series_path = self._map_path_to_kodi(self.env.series_path, client.is_posix)
+                episodes = client.get_episodes_from_dir(series_path)
+                for episode in episodes:
+                    self.log.info("Removing episode: %s", episode)
+                    try:
+                        client.remove_episode(episode.episode_id)
+                    except APIError:
+                        self.log.warning("Failed to remove %s", episode)
+
+                if client.library_scanned:
+                    break
+
         if self.cfg.notifications.on_series_delete:
             title = "Sonarr - Series Deleted"
             msg = f"{self.env.series_title} ({self.env.series_year})"
