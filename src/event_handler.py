@@ -332,6 +332,12 @@ class EventHandler:
 
     def series_delete(self) -> None:
         """Deleting a Series"""
+        self.log.info("Series Delete Event Detected")
+
+        if self.cfg.notifications.on_series_delete:
+            title = "Sonarr - Series Deleted"
+            msg = f"{self.env.series_title} ({self.env.series_year})"
+            self._notify_clients(title=title, msg=msg)
 
     def health_issue(self) -> None:
         """Experienced a Health Issue"""
