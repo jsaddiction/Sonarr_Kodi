@@ -136,6 +136,7 @@ class EventHandler:
         # Scan new episode file into kodi library
         for client in self.clients:
             series_path = self._map_path_to_kodi(self.env.series_path, client.is_posix)
+            self.log.info("Scanning %s with %s", series_path, client.name)
             try:
                 new_episodes = client.scan_series_dir(series_path)
             except (APIError, ScanTimeout):
