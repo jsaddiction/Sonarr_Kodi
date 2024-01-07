@@ -40,7 +40,7 @@ class KodiClient:
         "title",
         "resume",
     ]
-    SHOW_PROPERTIES = ["title", "file"]
+    SHOW_PROPERTIES = ["title", "file", "year"]
 
     def __init__(self, cfg: ClientConfig) -> None:
         self.log = logging.getLogger(f"Client.{cfg.name}")
@@ -125,7 +125,12 @@ class KodiClient:
         show_details_lst = []
         for show in shows:
             show_details_lst.append(
-                ShowDetails(show_id=KodiClient._to_int(show["tvshowid"]), file=show["file"], title=show["title"])
+                ShowDetails(
+                    show_id=KodiClient._to_int(show["tvshowid"]),
+                    file=show["file"],
+                    title=show["title"],
+                    year=KodiClient._to_int(show["year"]),
+                )
             )
         return show_details_lst
 
@@ -309,6 +314,20 @@ class KodiClient:
 
         return None
 
+    def get_show_from_id(self, show_id: int) -> ShowDetails:
+        """Get details of a specific TV Show"""
+        params = {"tvshowid": show_id, "properties": self.SHOW_PROPERTIES}
+        resp = self._req("VideoLibrary.GetTVShowDetails", params=params)
+
+        if not resp.is_valid("tvshowdetails"):
+            raise APIError(f"Invalid response while finding TV Show details for id: {show_id}")
+
+        show_details_lst = self._parse_show_details([resp.result["tvshowdetails"]])
+        if len(show_details_lst) == 1:
+            return show_details_lst[0]
+
+        return None
+
     def scan_series_dir(self, directory: str) -> list[EpisodeDetails]:
         """Scan a directory returning new episodes"""
         # Ensure trailing slash
@@ -375,6 +394,19 @@ class KodiClient:
         resp = self._req("VideoLibrary.Clean", params=params, timeout=1800)
         if not resp.is_valid("OK"):
             raise APIError("Failed to clean video Library.")
+
+    def remove_tvshow(self, show_id: int) -> ShowDetails:
+        """Remove a TV Show from library and return it's details"""
+        show_details = self.get_show_from_id(show_id)
+        params = {"tvshowid": show_details.show_id}
+        resp = self._req("VideoLibrary.RemoveTVShow", params=params)
+
+        if not resp.is_valid("OK"):
+            raise APIError(f"Failed to remove TVShow id: {show_id}")
+
+        self.library_scanned = True
+
+        return show_details
 
     def remove_episode(self, episode_id: int) -> EpisodeDetails:
         """Remove an episode from library and return it's details"""

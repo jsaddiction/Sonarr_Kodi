@@ -336,23 +336,36 @@ class EventHandler:
 
         # Removing episodes
         if self.env.series_deleted_files:
+            removed_episodes = []
+            removed_shows = []
             for client in self.clients:
                 series_path = self._map_path_to_kodi(self.env.series_path, client.is_posix)
+
+                # Remove all episodes within the series path
                 episodes = client.get_episodes_from_dir(series_path)
                 for episode in episodes:
                     self.log.info("Removing episode: %s", episode)
                     try:
-                        client.remove_episode(episode.episode_id)
+                        removed_episodes.append(client.remove_episode(episode.episode_id))
                     except APIError:
-                        self.log.warning("Failed to remove %s", episode)
+                        self.log.warning("Failed to remove episode %s", episode)
+                        continue
 
-                if client.library_scanned:
-                    break
+                # Remove all TV Shows within the series path
+                deleted_shows = client.get_shows_from_dir(series_path)
+                for show in deleted_shows:
+                    self.log.info("Removing TV Show: %s", show)
+                    try:
+                        removed_shows.append(client.remove_tvshow(show.show_id))
+                    except APIError:
+                        self.log.warning("Failed to remove TV Show %s", show)
+                        continue
 
-        if self.cfg.notifications.on_series_delete:
-            title = "Sonarr - Series Deleted"
-            msg = f"{self.env.series_title} ({self.env.series_year})"
-            self._notify_clients(title=title, msg=msg)
+                if len(removed_episodes) > 0 and len(removed_shows) > 0:
+                    if self.cfg.notifications.on_series_delete:
+                        title = "Sonarr - Series Deleted"
+                        for show in removed_shows:
+                            self._notify_clients(title=title, msg=show)
 
     def health_issue(self) -> None:
         """Experienced a Health Issue"""

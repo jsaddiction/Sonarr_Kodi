@@ -124,6 +124,10 @@ class ShowDetails:
     show_id: int
     file: str
     title: str
+    year: int
+
+    def __str__(self) -> str:
+        return f"{self.title} ({self.year})"
 
 
 @dataclass(frozen=True)
