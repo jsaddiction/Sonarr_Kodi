@@ -21,6 +21,7 @@ class EventHandler:
         self.clients = clients
         self.log = logging.getLogger("EventHandler")
 
+    # Helper methods
     def _map_path_to_kodi(self, sonarr_path: str, to_posix: bool) -> str:
         for path_map in self.cfg.library.path_mapping:
             if path_map.sonarr in sonarr_path:
@@ -105,6 +106,7 @@ class EventHandler:
             self.log.info("Sending Notification to %s : %s %s", client.name, title, msg)
             client.notify(msg, title)
 
+    # Events
     def grab(self) -> None:
         """Grab Events"""
         self.log.info("Grab Event Detected")
@@ -300,6 +302,7 @@ class EventHandler:
             deleted_file = self._map_path_to_kodi(self.env.episode_file_path, client.is_posix)
             episodes: list[EpisodeDetails] = client.get_episodes_from_file(deleted_file)
             for episode in episodes:
+                self.log.info("Removing episode: %s", episode)
                 try:
                     client.remove_episode(episode.episode_id)
                 except APIError:
