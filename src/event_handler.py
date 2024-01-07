@@ -323,6 +323,12 @@ class EventHandler:
 
     def series_add(self) -> None:
         """Adding a Series"""
+        self.log.info("Series Add Event Detected")
+
+        if self.cfg.notifications.on_series_add:
+            title = "Sonarr - Series Added"
+            msg = f"{self.env.series_title} ({self.env.series_year})"
+            self._notify_clients(title=title, msg=msg)
 
     def series_delete(self) -> None:
         """Deleting a Series"""
