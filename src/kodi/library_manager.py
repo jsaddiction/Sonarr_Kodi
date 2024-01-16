@@ -235,9 +235,6 @@ class LibraryManager:
 
     def remove_episodes(self, episodes: list[EpisodeDetails]) -> list[EpisodeDetails] | None:
         """Remove episode from library"""
-        if not episodes:
-            return []
-
         removed_episodes = set()
         self.log.info("Removing %s episodes", len(episodes))
         for host in self.hosts:

@@ -128,11 +128,12 @@ class EventHandler:
         for path in self.env.deleted_paths:
             old_episodes.add(self.kodi.get_episodes_by_file(path))
 
-        if not old_episodes:
+        if len(old_episodes) == 0:
             self.log.warning("Failed to get old episode data. Unable to persist watched states.")
-
-        # remove episodes
-        removed_episodes = self.kodi.remove_episodes(list(old_episodes))
+            removed_episodes = []
+        else:
+            # remove episodes
+            removed_episodes = self.kodi.remove_episodes(list(old_episodes))
 
         # scan show directory
         new_episodes = self.kodi.scan_directory(self.env.series_path, skip_active=self.cfg.library.skip_active)
