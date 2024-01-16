@@ -155,8 +155,8 @@ class KodiRPC:
                         date_added=KodiRPC._to_dt(episode["dateadded"]),
                         last_played=KodiRPC._to_dt(episode["lastplayed"]),
                         resume=ResumeState(
-                            position=KodiRPC._to_float(episode["resume"]["position"]),
-                            total=KodiRPC._to_float(episode["resume"]["total"]),
+                            position=KodiRPC._to_int(episode["resume"]["position"]),
+                            total=KodiRPC._to_int(episode["resume"]["total"]),
                         ),
                     ),
                 )

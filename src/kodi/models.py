@@ -92,11 +92,6 @@ class WatchedState:
     last_played: datetime | None = field(default=None)
     resume: ResumeState = field(default_factory=ResumeState)
 
-    def __str__(self) -> str:
-        return f"""DateAdded={self.date_added_str} :
-         LastPlayed={self.last_played_str} :
-         PlayCount={self.play_count} : Resume={self.resume}"""
-
     @property
     def date_added_str(self) -> str:
         """Formatted Date Added DT"""
