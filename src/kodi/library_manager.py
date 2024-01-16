@@ -56,7 +56,6 @@ class LibraryManager:
         """Update GUI for all hosts not scanned"""
         self.log.info("Updating GUI on %s hosts", len(self.hosts_not_scanned))
         for host in self.hosts_not_scanned:
-            self.log.info("Updating GUI on %s", host.name)
             host.update_gui()
 
     def notify(self, title: str, msg: str) -> None:
