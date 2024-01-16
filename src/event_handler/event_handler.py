@@ -80,7 +80,7 @@ class EventHandler:
                 return
 
         # New Show, perform full scan
-        if self.kodi.get_episodes_by_dir(self.env.series_path) == 0:
+        if not self.kodi.show_exists(self.env.series_path):
             self.log.info("New Show Detected, Full scan required.")
             new_episodes = self.kodi.full_scan(skip_active=self.cfg.library.skip_active)
 
