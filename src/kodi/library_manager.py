@@ -95,6 +95,8 @@ class LibraryManager:
                 self.log.warning("Failed to scan. Skipping this host.")
                 continue
 
+            break
+
         # Get current episodes (after scan)
         episodes_after_scan = self.get_episodes_by_dir(show_dir)
 
