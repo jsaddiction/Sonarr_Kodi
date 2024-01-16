@@ -222,7 +222,7 @@ class LibraryManager:
 
         return []
 
-    def get_episodes_by_file(self, episode_path: str) -> list[EpisodeDetails] | None:
+    def get_episodes_by_file(self, episode_path: str) -> list[EpisodeDetails]:
         """Get episode data for each episode file"""
         self.log.info("Getting episodes by file path %s", episode_path)
         for host in self.hosts:
@@ -231,7 +231,7 @@ class LibraryManager:
             except APIError:
                 continue
 
-        return None
+        return []
 
     def remove_episodes(self, episodes: list[EpisodeDetails]) -> list[EpisodeDetails] | None:
         """Remove episode from library"""
