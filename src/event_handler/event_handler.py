@@ -87,7 +87,7 @@ class EventHandler:
         # Existing show, try scanning directory. Maybe fallback to full scan
         else:
             self.log.info("Existing Show Detected, Performing directory scan.")
-            new_episodes = self.kodi.scan_show_directory(self.env.series_path, skip_active=self.cfg.library.skip_active)
+            new_episodes = self.kodi.scan_directory(self.env.series_path, skip_active=self.cfg.library.skip_active)
             if not new_episodes and self.cfg.library.full_scan_fallback:
                 self.log.info("No new episodes found during folder scan. Falling back to Full Scan.")
                 new_episodes = self.kodi.full_scan(skip_active=self.cfg.library.skip_active)
@@ -135,7 +135,7 @@ class EventHandler:
         removed_episodes = self.kodi.remove_episodes(list(old_episodes))
 
         # scan show directory
-        new_episodes = self.kodi.scan_show_directory(self.env.series_path, skip_active=self.cfg.library.skip_active)
+        new_episodes = self.kodi.scan_directory(self.env.series_path, skip_active=self.cfg.library.skip_active)
 
         # Fall back to full library scan
         if not new_episodes and self.cfg.library.full_scan_fallback:
@@ -187,7 +187,7 @@ class EventHandler:
         removed_episodes = self.kodi.remove_episodes(list(old_episodes))
 
         # Scan for new episodes
-        new_episodes = self.kodi.scan_show_directory(self.env.series_path, skip_active=self.cfg.library.skip_active)
+        new_episodes = self.kodi.scan_directory(self.env.series_path, skip_active=self.cfg.library.skip_active)
 
         # Optionally, Clean Library
         if self.cfg.library.clean_after_update:
