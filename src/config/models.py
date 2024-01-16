@@ -5,7 +5,7 @@ import sys
 from dataclasses import dataclass, field
 from typing import Any, Type, Self
 from enum import Enum
-from src.kodi import ClientConfig
+from src.kodi.config import HostConfig
 
 log = logging.getLogger("Config Parser")
 
@@ -85,7 +85,7 @@ class LibraryCfg:
     """Library Config"""
 
     clean_after_update: bool
-    update_while_playing: bool
+    skip_active: bool
     full_scan_fallback: bool
     wait_for_nfo: bool
     nfo_timeout_minuets: int
@@ -103,7 +103,7 @@ class LibraryCfg:
         assert isinstance(self.nfo_timeout_minuets, int), "Invalid library.nfo_timeout_minuets. Must be an integer"
 
         assert isinstance(
-            self.update_while_playing, bool
+            self.skip_active, bool
         ), "Invalid library.update_while_playing. Must Be one of [true, false, yes, no]"
 
         assert isinstance(
@@ -122,7 +122,7 @@ class LibraryCfg:
                 clean_after_update=data["clean_after_update"],
                 wait_for_nfo=data["wait_for_nfo"],
                 nfo_timeout_minuets=data["nfo_timeout_minuets"],
-                update_while_playing=data["update_while_playing"],
+                skip_active=data["skip_active"],
                 full_scan_fallback=data["full_scan_fallback"],
                 path_mapping=path_mapping,
             )
@@ -226,7 +226,7 @@ class Config:
     logs: LogCfg = field(default_factory=LogCfg)
     library: LibraryCfg = field(default_factory=LibraryCfg)
     notifications: Notifications = field(default_factory=Notifications)
-    hosts: list[ClientConfig] = field(default_factory=list)
+    hosts: list[HostConfig] = field(default_factory=list)
 
     @classmethod
     def from_dict(cls: Type["Config"], data: dict) -> Self:
@@ -244,5 +244,5 @@ class Config:
             logs=LogCfg.from_dict(log_cfg),
             library=LibraryCfg.from_dict(library_cfg),
             notifications=Notifications.from_dict(notification_cfg),
-            hosts=[ClientConfig.from_dict(x) for x in hosts_cfg],
+            hosts=[HostConfig.from_dict(x) for x in hosts_cfg],
         )

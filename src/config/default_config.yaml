@@ -3,7 +3,7 @@ logs:
   write_file: false # Write logging to file. Can be reviewed from sonarr log file page
 library:
   clean_after_update: false # Clean library after scanning.
-  update_while_playing: false # Prevent library scans while playing videos. Will wait if no clients are available.
+  skip_active: false # Prevent library scans while playing videos. Will wait if no clients are available.
   full_scan_fallback: false # Fallback to full library scan if a failure occur, clean_after_update should also be set.
   wait_for_nfo: false # Set to true if kodi is configured with a "local files only" scraper
   nfo_timeout_minuets: 3 # Maximum amount of time in minuets to wait for NFO file creation. Per file
@@ -25,9 +25,10 @@ notifications: # Global Notification settings.  Display sonarr events within kod
   on_test: true # Notify on test events. Helpful when troubleshooting Kodi connections
 hosts: # List of kodi instances to manage (assumes each host accesses a shared library)
   - name: Default # Generic name of the instance. Only used within logs
-    host: 127.0.0.1 # IP address of the instance.
+    ip_addr: 127.0.0.1 # IP address of the instance.
     port: 8080 # Port where the JSON-RPC interface is listening. Generally 8080.
     user: # Username
     password: # Password
     enabled: false # Enable/disable this host. Offline hosts slow this script down, disable them here.
+    disable_notifications: false # Disable all notifications on this host
     priority: 0 # Used to sort hosts. Lower numbers = higher priority

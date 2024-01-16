@@ -79,8 +79,8 @@ class Source:
 class ResumeState:
     """Resume Point of a Media Item"""
 
-    position: float = field(default=0.0)
-    total: float = field(default=0.0)
+    position: int = field(default=0)
+    total: int = field(default=0)
 
 
 @dataclass
@@ -91,6 +91,11 @@ class WatchedState:
     date_added: datetime | None = field(default=None)
     last_played: datetime | None = field(default=None)
     resume: ResumeState = field(default_factory=ResumeState)
+
+    def __str__(self) -> str:
+        return f"""DateAdded={self.date_added_str} :
+         LastPlayed={self.last_played_str} :
+         PlayCount={self.play_count} : Resume={self.resume}"""
 
     @property
     def date_added_str(self) -> str:
