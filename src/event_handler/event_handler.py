@@ -268,12 +268,6 @@ class EventHandler:
             )
             return
 
-        # Get Current library data
-        deleted_episodes = self.kodi.get_episodes_by_dir(self.env.series_path)
-
-        # Remove episodes
-        self.kodi.remove_episodes(deleted_episodes)
-
         # Remove Show
         self.kodi.remove_show(self.env.series_path)
 
