@@ -3,8 +3,7 @@
 # import os
 import json
 import logging
-from time import sleep
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import PurePosixPath, PureWindowsPath
 import requests
 
@@ -188,9 +187,8 @@ class KodiRPC:
         return str(PureWindowsPath(path).parent)
 
     # used local only
-    def _wait_for_video_scan(self) -> None:
+    def _wait_for_video_scan(self) -> timedelta:
         """Wait for video scan to complete"""
-        delay = 0.25
         max_time_sec = 1800  # 30 Min
         start = datetime.now()
         self.log.debug("Waiting up to %s minuets for library scan to complete", max_time_sec / 60)
@@ -199,13 +197,10 @@ class KodiRPC:
 
             # Check if scanning, may raise APIError if failed to communicate
             if not self.is_scanning:
-                return
+                return elapsed
 
             if elapsed.total_seconds() >= max_time_sec:
                 raise ScanTimeout(f"Scan timed out after {elapsed}")
-
-            # Pause execution to prevent api saturation
-            sleep(delay)
 
     def _req(self, method: str, params: dict = None, timeout: int = None) -> KodiResponse | None:
         """Send request to this Kodi Host"""
@@ -273,15 +268,12 @@ class KodiRPC:
 
         # Scan the Directory
         self.log.info("Scanning directory '%s'", mapped_path)
-        start = datetime.now()
         resp = self._req("VideoLibrary.Scan", params=params)
         if not resp.is_valid("OK"):
             raise APIError(f"Invalid Response While Scanning {directory}. Error: {resp.error}")
 
         # Wait for library to scan
-        self._wait_for_video_scan()
-
-        elapsed = datetime.now() - start
+        elapsed = self._wait_for_video_scan()
         self.log.info("Scan completed in %s", elapsed)
         self.library_scanned = True
 
@@ -293,7 +285,8 @@ class KodiRPC:
         resp = self._req("VideoLibrary.Scan", params=params)
         if not resp.is_valid("OK"):
             raise APIError(f"Invalid response when attempting full scan. Error: Error: {resp.error}")
-        self._wait_for_video_scan()
+        elapsed = self._wait_for_video_scan()
+        self.log.info("Scan completed in %s", elapsed)
         self.library_scanned = True
 
     # not used yet
