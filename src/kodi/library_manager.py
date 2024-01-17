@@ -6,7 +6,7 @@ from dataclasses import asdict
 from .rpc_client import KodiRPC
 from .config import HostConfig
 from .exceptions import APIError, ScanTimeout
-from .models import EpisodeDetails, ShowDetails, Source
+from .models import EpisodeDetails, ShowDetails, Source, Notification
 
 
 class LibraryManager:
@@ -58,15 +58,17 @@ class LibraryManager:
             self.log.info("Updating GUI on %s", host.name)
             host.update_gui()
 
-    def notify(self, title: str, msg: str) -> None:
+    def notify(self, notifications: list[Notification]) -> None:
         """Send notification to all enabled hosts if"""
+
         for host in self.hosts:
             if host.disable_notifications:
                 self.log.debug("Notifications disabled on %s", host.name)
                 continue
 
-            self.log.info("Sending notification to %s", host.name)
-            host.notify(msg, title)
+            self.log.info("Sending notifications to %s", host.name)
+            for notification in notifications:
+                host.notify(notification)
 
     # -------------- Library Scanning --------------
     def scan_directory(self, show_dir: str, skip_active: bool = False) -> list[EpisodeDetails]:

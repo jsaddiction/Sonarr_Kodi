@@ -24,6 +24,19 @@ class Platform(Enum):
 
 
 @dataclass
+class Notification:
+    """Kodi Notification"""
+
+    title: str
+    msg: str
+    display_time: int = field(default=5000)
+    image: str = field(default="https://github.com/jsaddiction/KodiLibrarian/raw/main/img/Sonarr.png")
+
+    def __str__(self) -> str:
+        return f"TITLE='{self.title}' MSG='{self.msg}'"
+
+
+@dataclass
 class KodiResponseError:
     """Error Response"""
 

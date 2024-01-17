@@ -11,6 +11,7 @@ from .config import HostConfig
 from .exceptions import APIError, ScanTimeout
 from .models import (
     Platform,
+    Notification,
     KodiResponse,
     KodiResponseError,
     WatchedState,
@@ -330,16 +331,16 @@ class KodiRPC:
             self.log.info("Failed to update GUI.")
 
     # used remote only
-    def notify(self, msg: str, title: str) -> None:
+    def notify(self, notification: Notification) -> None:
         """Send GUI Notification to Kodi Host"""
         params = {
-            "title": str(title),
-            "message": str(msg),
-            "displaytime": 5000,
-            "image": "https://github.com/jsaddiction/KodiLibrarian/raw/main/img/Sonarr.png",
+            "title": str(notification.title),
+            "message": str(notification.msg),
+            "displaytime": int(notification.display_time),
+            "image": notification.image,
         }
-        self.log.debug("Sending notification :: TITLE='%s' MSG='%s'", title, msg)
-        resp = self._req("GUI.ShowNotification", params)
+        self.log.debug("Sending Notification :: %s", notification)
+        resp = self._req("GUI.ShowNotification", params=params)
         if not resp.is_valid("OK"):
             self.log.warning("Failed to send notification")
             return
