@@ -90,7 +90,7 @@ class KodiRPC:
         params = {"booleans": ["Library.IsScanning"]}
         resp = self._req("XBMC.GetInfoBooleans", params=params)
         if not resp.is_valid():
-            return False
+            raise APIError("Failed to determine library scanning state.")
 
         return resp.result["Library.IsScanning"]
 
@@ -197,11 +197,12 @@ class KodiRPC:
         while True:
             elapsed = datetime.now() - start
 
+            # Check if scanning, may raise APIError if failed to communicate
             if not self.is_scanning:
                 return
 
             if elapsed.total_seconds() >= max_time_sec:
-                raise ScanTimeout  # (elapsed, waited for)
+                raise ScanTimeout(f"Scan timed out after {elapsed}")
 
             # Pause execution to prevent api saturation
             sleep(delay)
@@ -275,14 +276,10 @@ class KodiRPC:
         start = datetime.now()
         resp = self._req("VideoLibrary.Scan", params=params)
         if not resp.is_valid("OK"):
-            raise APIError(f"Invalid Response While Scanning {directory}")
+            raise APIError(f"Invalid Response While Scanning {directory}. Error: {resp.error}")
 
         # Wait for library to scan
-        try:
-            self._wait_for_video_scan()
-        except ScanTimeout:
-            self.log.warning("Scan took too long!")
-            return
+        self._wait_for_video_scan()
 
         elapsed = datetime.now() - start
         self.log.info("Scan completed in %s", elapsed)
@@ -295,7 +292,7 @@ class KodiRPC:
         self.log.debug("Performing full video library scan")
         resp = self._req("VideoLibrary.Scan", params=params)
         if not resp.is_valid("OK"):
-            raise APIError("Failed to scan full library")
+            raise APIError(f"Invalid response when attempting full scan. Error: Error: {resp.error}")
         self._wait_for_video_scan()
         self.library_scanned = True
 

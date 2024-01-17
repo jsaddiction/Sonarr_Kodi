@@ -80,27 +80,22 @@ class LibraryManager:
         # Get current episodes
         episodes_before_scan = self.get_episodes_by_dir(show_dir)
 
-        # Optionally, wait for inactive players
-        if skip_active and len(self.hosts_not_playing) == 0:
-            self.log.info("Directory scan paused while waiting for an inactive player")
-            while len(self.hosts_not_playing) == 0:
-                sleep(1)
-
         # Scanning
-        for host in self.hosts:
-            # Skip active hosts
-            if skip_active and host.is_playing:
-                self.log.info("Skipping active player %s", host.name)
-                continue
+        scanned = False
+        while not scanned:
+            for host in self.hosts:
+                # Optionally, Skip active hosts
+                if skip_active and host.is_playing:
+                    self.log.info("Skipping active player %s", host.name)
+                    continue
 
-            # Scan the directory
-            try:
-                host.scan_series_dir(show_dir)
-            except (APIError, ScanTimeout):
-                self.log.warning("Failed to scan. Skipping this host.")
-                continue
-
-            break
+                # Scan the directory
+                try:
+                    host.scan_series_dir(show_dir)
+                    scanned = True
+                except (APIError, ScanTimeout) as e:
+                    self.log.warning("Failed to scan. Skipping this host. Error: %s", e)
+                    continue
 
         # Get current episodes (after scan)
         episodes_after_scan = self.get_episodes_by_dir(show_dir)
@@ -122,16 +117,21 @@ class LibraryManager:
 
         # Scan Video library
         self.log.info("Performing full library scan")
-        for host in self.hosts:
-            if skip_active and host.is_playing:
-                self.log.info("Skipping active player %s", host.name)
-                continue
-            try:
-                host.full_video_scan()
-            except APIError:
-                continue
+        scanned = False
+        while not scanned:
+            for host in self.hosts:
+                # Optionally, Skip active hosts
+                if skip_active and host.is_playing:
+                    self.log.info("Skipping active player %s", host.name)
+                    continue
 
-            break
+                # Scan the directory
+                try:
+                    host.full_video_scan()
+                    scanned = True
+                except (APIError, ScanTimeout) as e:
+                    self.log.warning("Failed to scan. Skipping this host. Error: %s", e)
+                    continue
 
         # Get episodes after scan
         episodes_after_scan = self.get_all_episodes()
