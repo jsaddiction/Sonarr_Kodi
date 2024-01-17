@@ -190,6 +190,9 @@ class EventHandler:
 
         # Scan for new episodes
         new_episodes = self.kodi.scan_directory(self.env.series_path, skip_active=self.cfg.library.skip_active)
+        # Fall back to full library scan
+        if not new_episodes and self.cfg.library.full_scan_fallback:
+            new_episodes = self.kodi.scan_video_library(skip_active=self.cfg.library.skip_active)
 
         # Optionally, Clean Library
         if self.cfg.library.clean_after_update:
