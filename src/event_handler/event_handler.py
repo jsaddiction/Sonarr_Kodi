@@ -178,9 +178,9 @@ class EventHandler:
                 return
 
         # Get current data from library
-        old_episodes = set()
+        old_episodes = []
         for path in self.env.episode_file_previous_paths:
-            old_episodes.add(self.kodi.get_episodes_by_file(path))
+            old_episodes.extend(self.kodi.get_episodes_by_file(path))
 
         if not old_episodes:
             self.log.warning("Failed to get old episode data. Unable to persist watched states.")
