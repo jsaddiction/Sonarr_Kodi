@@ -60,6 +60,8 @@ def main() -> None:
             log.critical("Event type was unknown or could not be parsed :: %s", ENV.event_type)
             sys.exit(1)
 
+    log.info("Processing Complete")
+
 
 if __name__ == "__main__":
     main()
