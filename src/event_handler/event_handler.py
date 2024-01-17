@@ -192,7 +192,7 @@ class EventHandler:
             self.log.warning("Failed to get old episode data. Unable to persist watched states.")
 
         # Remove old episodes
-        removed_episodes = self.kodi.remove_episodes(list(old_episodes))
+        removed_episodes = self.kodi.remove_episodes(old_episodes)
 
         # Scan for new episodes
         new_episodes = self.kodi.scan_directory(self.env.series_path, skip_active=self.cfg.library.skip_active)
@@ -263,9 +263,9 @@ class EventHandler:
         # Exit early if no files were deleted
         if not self.env.series_deleted_files:
             self.log.info("No files were deleted. Not editing library.")
-            title = "Sonarr Deleted Show"
-            msg = f"{self.env.series_title} ({self.env.series_year})"
-            self.kodi.notify(title, msg)
+            self.kodi.notify(
+                [Notification(title="Sonarr Deleted Show", msg=f"{self.env.series_title} ({self.env.series_year})")]
+            )
             return
 
         # Get Current library data

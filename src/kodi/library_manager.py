@@ -295,12 +295,13 @@ class LibraryManager:
                 shows = host.get_shows_from_dir(series_path)
             except APIError:
                 self.log.warning("Failed to get shows in %s", series_path)
+                continue
             break
 
         # Exit early if no shows to remove
         if not shows:
             self.log.warning("No shows found within %s", series_path)
-            return None
+            return []
 
         for host in self.hosts:
             for show in shows:
