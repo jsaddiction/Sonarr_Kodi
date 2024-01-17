@@ -310,6 +310,7 @@ class LibraryManager:
                 except APIError:
                     self.log.warning("Failed to remove TV Show %s", show)
                     continue
+            break
 
         return removed_shows
 
