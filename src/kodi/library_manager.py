@@ -54,14 +54,18 @@ class LibraryManager:
     # -------------- GUI Methods --------------
     def update_guis(self) -> None:
         """Update GUI for all hosts not scanned"""
-        self.log.info("Updating GUI on %s hosts", len(self.hosts_not_scanned))
         for host in self.hosts_not_scanned:
+            self.log.info("Updating GUI on %s", host.name)
             host.update_gui()
 
     def notify(self, title: str, msg: str) -> None:
         """Send notification to all enabled hosts if"""
-        self.log.info("Sending notification to %s hosts", len(self.hosts))
         for host in self.hosts:
+            if host.disable_notifications:
+                self.log.debug("Notifications disabled on %s", host.name)
+                continue
+
+            self.log.info("Sending notification to %s", host.name)
             host.notify(msg, title)
 
     # -------------- Library Scanning --------------
@@ -82,12 +86,14 @@ class LibraryManager:
             while len(self.hosts_not_playing) == 0:
                 sleep(1)
 
-        # Scan the show_dir
-        self.log.info("Scanning show directory")
+        # Scanning
         for host in self.hosts:
+            # Skip active hosts
             if skip_active and host.is_playing:
                 self.log.info("Skipping active player %s", host.name)
                 continue
+
+            # Scan the directory
             try:
                 host.scan_series_dir(show_dir)
             except (APIError, ScanTimeout):
@@ -202,7 +208,7 @@ class LibraryManager:
         """Get all episodes from library
         This is Library expensive operation
         """
-        self.log.info("Getting all episodes")
+        self.log.info("Getting all episodes. This may take a moment.")
         for host in self.hosts:
             try:
                 return host.get_all_episodes()
@@ -213,7 +219,6 @@ class LibraryManager:
 
     def get_episodes_by_dir(self, show_dir) -> list[EpisodeDetails]:
         """Get all episodes contained in a directory"""
-        self.log.info("Getting episodes within %s", show_dir)
         for host in self.hosts:
             try:
                 return host.get_episodes_from_dir(show_dir)
@@ -224,7 +229,6 @@ class LibraryManager:
 
     def get_episodes_by_file(self, episode_path: str) -> list[EpisodeDetails]:
         """Get episode data for each episode file"""
-        self.log.info("Getting episodes by file path %s", episode_path)
         for host in self.hosts:
             try:
                 return host.get_episodes_from_file(episode_path)
@@ -236,9 +240,9 @@ class LibraryManager:
     def remove_episodes(self, episodes: list[EpisodeDetails]) -> list[EpisodeDetails] | None:
         """Remove episode from library"""
         removed_episodes = set()
-        self.log.info("Removing %s episodes", len(episodes))
         for host in self.hosts:
             for ep in [x for x in episodes if x not in removed_episodes]:
+                self.log.info("Removing episode %s", ep)
                 try:
                     host.remove_episode(ep.episode_id)
                     removed_episodes.add(ep)
@@ -255,11 +259,11 @@ class LibraryManager:
     def copy_ep_metadata(self, old_eps: list[EpisodeDetails], new_eps: list[EpisodeDetails]) -> list[EpisodeDetails]:
         """Copy watched states and date added from old episodes to their matching new entires"""
         edited_episodes = set()
-        self.log.info("Copying %s episode[s] metadata to new episode[s]", len(new_eps))
         for host in self.hosts:
             for old_ep in old_eps:
                 for new_ep in new_eps:
                     if old_ep == new_ep:
+                        self.log.info("Copying episode metadata to new episode : %s", new_ep)
                         try:
                             host.set_episode_watched_state(old_ep, new_ep.episode_id)
                             edited_episodes.add(host.get_episode_from_id(new_ep.episode_id))

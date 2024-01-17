@@ -271,13 +271,21 @@ class KodiRPC:
         params = {"directory": mapped_path, "showdialogs": False}
 
         # Scan the Directory
-        self.log.debug("Scanning %s using mapped path %s", directory, mapped_path)
+        self.log.info("Scanning directory '%s'", mapped_path)
+        start = datetime.now()
         resp = self._req("VideoLibrary.Scan", params=params)
         if not resp.is_valid("OK"):
             raise APIError(f"Invalid Response While Scanning {directory}")
 
         # Wait for library to scan
-        self._wait_for_video_scan()
+        try:
+            self._wait_for_video_scan()
+        except ScanTimeout:
+            self.log.warning("Scan took too long!")
+            return
+
+        elapsed = datetime.now() - start
+        self.log.info("Scan completed in %s", elapsed)
         self.library_scanned = True
 
     # used remote only
@@ -322,7 +330,7 @@ class KodiRPC:
     def update_gui(self) -> None:
         """Update GUI|Widgets by scanning a non existent path"""
         if self.library_scanned:
-            self.log.info("GUI update not required, Skipping.")
+            self.log.info("Library Scanned. GUI update not required, Skipping.")
             return
 
         params = {"directory": "/does_not_exist/", "showdialogs": False}
@@ -334,9 +342,6 @@ class KodiRPC:
     # used remote only
     def notify(self, msg: str, title: str) -> None:
         """Send GUI Notification to Kodi Host"""
-        if self.disable_notifications:
-            self.log.info("Notifications disabled. Skipping")
-            return
         params = {
             "title": str(title),
             "message": str(msg),
