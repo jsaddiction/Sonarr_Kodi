@@ -93,6 +93,7 @@ class LibraryManager:
                 try:
                     host.scan_series_dir(show_dir)
                     scanned = True
+                    break
                 except (APIError, ScanTimeout) as e:
                     self.log.warning("Failed to scan. Skipping this host. Error: %s", e)
                     continue
@@ -129,6 +130,7 @@ class LibraryManager:
                 try:
                     host.full_video_scan()
                     scanned = True
+                    break
                 except (APIError, ScanTimeout) as e:
                     self.log.warning("Failed to scan. Skipping this host. Error: %s", e)
                     continue
