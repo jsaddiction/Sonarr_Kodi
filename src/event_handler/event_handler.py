@@ -227,12 +227,10 @@ class EventHandler:
             return
 
         # Get current data from library
-        old_episodes = set()
-        for path in self.env.episode_file_path:
-            old_episodes.add(self.kodi.get_episodes_by_file(path))
+        old_episodes = self.kodi.get_episodes_by_file(self.env.episode_file_path)
 
         # Remove episodes from library
-        removed_episodes = self.kodi.remove_episodes(list(old_episodes))
+        removed_episodes = self.kodi.remove_episodes(old_episodes)
 
         # Optionally, Clean Library
         if self.cfg.library.clean_after_update:

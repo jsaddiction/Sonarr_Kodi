@@ -400,8 +400,7 @@ class KodiRPC:
         resp = self._req("VideoLibrary.GetEpisodes", params=params)
 
         if not resp.is_valid("episodes"):
-            self.log.warning("Failed to get episodes from %s", mapped_path)
-            raise APIError(f"Invalid response while finding episodes for file '{mapped_path}'")
+            raise APIError(f"Invalid response: {resp}")
 
         return self._parse_ep_details(resp.result["episodes"])
 
@@ -418,7 +417,7 @@ class KodiRPC:
         resp = self._req("VideoLibrary.GetEpisodes", params=params)
 
         if not resp.is_valid("episodes"):
-            raise APIError(f"Invalid response while finding episodes for directory '{series_dir}'")
+            raise APIError(f"Invalid response: {resp}")
 
         return self._parse_ep_details(resp.result["episodes"])
 

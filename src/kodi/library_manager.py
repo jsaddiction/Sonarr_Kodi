@@ -226,8 +226,9 @@ class LibraryManager:
         for host in self.hosts:
             try:
                 return host.get_episodes_from_dir(show_dir)
-            except APIError:
-                self.log.warning("Failed to get episodes from %s", show_dir)
+            except APIError as e:
+                self.log.warning("Failed to get episodes by directory %s. Trying next host. Error: %s", show_dir, e)
+                continue
 
         return []
 
@@ -236,7 +237,8 @@ class LibraryManager:
         for host in self.hosts:
             try:
                 return host.get_episodes_from_file(episode_path)
-            except APIError:
+            except APIError as e:
+                self.log.warning("Failed to get episodes by file %s. Trying next host. Error: %s", episode_path, e)
                 continue
 
         return []
