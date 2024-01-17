@@ -133,7 +133,7 @@ class EventHandler:
             removed_episodes = []
         else:
             # remove episodes
-            self.log.info("Removing %s old episodes")
+            self.log.info("Removing %s old episodes", len(old_episodes))
             removed_episodes = self.kodi.remove_episodes(list(old_episodes))
 
         # scan show directory
