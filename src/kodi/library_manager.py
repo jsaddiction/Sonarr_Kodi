@@ -66,7 +66,7 @@ class LibraryManager:
                 self.log.debug("Notifications disabled on %s", host.name)
                 continue
 
-            self.log.info("Sending notifications to %s", host.name)
+            self.log.info("Sending %s notifications to %s", len(notifications), host.name)
             for notification in notifications:
                 host.notify(notification)
 
