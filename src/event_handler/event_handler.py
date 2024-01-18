@@ -60,16 +60,10 @@ class EventHandler:
 
         # Send notification for each attempted download
         if self.cfg.notifications.on_grab:
-            notifications = []
+            title = "Sonarr - Attempting Download"
             for ep_num, ep_title in zip(self.env.release_episode_numbers, self.env.release_episode_titles):
-                notifications.append(
-                    Notification(
-                        title="Sonarr - Attempting Download",
-                        msg=f"{self.env.series_title} - S{self.env.release_season_number:02}E{ep_num:02} - {ep_title}",
-                    )
-                )
-
-            self.kodi.notify(notifications)
+                msg = f"{self.env.series_title} - S{self.env.release_season_number:02}E{ep_num:02} - {ep_title}"
+                self.kodi.notify(Notification(title=title, msg=msg))
 
     def download_new(self) -> None:
         """Downloaded a new episode"""
@@ -111,10 +105,9 @@ class EventHandler:
 
         # Notify clients
         if self.cfg.notifications.on_download_new:
-            notifications = []
+            title = "Sonarr - Downloaded New Episode"
             for episode in new_episodes:
-                notifications.append(Notification(title="Sonarr - Downloaded New Episode", msg=episode))
-            self.kodi.notify(notifications)
+                self.kodi.notify(Notification(title=title, msg=episode))
 
     def download_upgrade(self) -> None:
         """Downloaded an upgraded episode file"""
@@ -165,10 +158,9 @@ class EventHandler:
 
         # notify clients
         if self.cfg.notifications.on_download_upgrade:
-            notifications = []
+            title = "Sonarr - Upgraded Episode"
             for episode in new_episodes:
-                notifications.append(Notification(title="Sonarr - Upgraded Episode", msg=episode))
-            self.kodi.notify(notifications)
+                self.kodi.notify(Notification(title=title, msg=episode))
 
     def rename(self) -> None:
         """Renamed an episode file"""
@@ -212,10 +204,9 @@ class EventHandler:
 
         # Notify clients
         if self.cfg.notifications.on_rename:
-            notifications = []
+            title = "Sonarr - Renamed Episode"
             for episode in new_episodes:
-                notifications.append(Notification(title="Sonarr - Renamed Episode", msg=episode))
-            self.kodi.notify(notifications)
+                self.kodi.notify(Notification(title=title, msg=episode))
 
     def episode_delete(self) -> None:
         """Remove an episode"""
@@ -241,20 +232,17 @@ class EventHandler:
 
         # Notify clients
         if self.cfg.notifications.on_delete:
-            notifications = []
+            title = "Sonarr - Deleted Episode"
             for episode in removed_episodes:
-                notifications.append(Notification(title="Sonarr - Deleted Episode", msg=episode))
-            self.kodi.notify(notifications)
+                self.kodi.notify(Notification(title=title, msg=episode))
 
     def series_add(self) -> None:
         """Adding a Series"""
         self.log.info("Series Add Event Detected")
 
         if self.cfg.notifications.on_series_add:
-            notification = Notification(
-                title="Sonarr - Series Added", msg=f"{self.env.series_title} ({self.env.series_year})"
-            )
-            self.kodi.notify(notifications=[notification])
+            title = "Sonarr - Series Added"
+            self.kodi.notify(Notification(title=title, msg=f"{self.env.series_title} ({self.env.series_year})"))
 
     def series_delete(self) -> None:
         """Deleting a Series"""
@@ -263,9 +251,8 @@ class EventHandler:
         # Exit early if no files were deleted
         if not self.env.series_deleted_files:
             self.log.info("No files were deleted. Not editing library.")
-            self.kodi.notify(
-                [Notification(title="Sonarr Deleted Show", msg=f"{self.env.series_title} ({self.env.series_year})")]
-            )
+            title = "Sonarr Deleted Show"
+            self.kodi.notify(Notification(title=title, msg=f"{self.env.series_title} ({self.env.series_year})"))
             return
 
         # Remove Show
@@ -280,10 +267,8 @@ class EventHandler:
 
         # Notify Clients
         if self.cfg.notifications.on_series_delete:
-            notification = Notification(
-                title="Sonarr Deleted Show", msg=f"{self.env.series_title} ({self.env.series_year})"
-            )
-            self.kodi.notify(notifications=[notification])
+            title = "Sonarr Deleted Show"
+            self.kodi.notify(Notification(title=title, msg=f"{self.env.series_title} ({self.env.series_year})"))
 
     def health_issue(self) -> None:
         """Experienced a Health Issue"""

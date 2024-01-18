@@ -58,17 +58,11 @@ class LibraryManager:
             self.log.info("Updating GUI on %s", host.name)
             host.update_gui()
 
-    def notify(self, notifications: list[Notification]) -> None:
+    def notify(self, notification: Notification) -> None:
         """Send notification to all enabled hosts if"""
 
         for host in self.hosts:
-            if host.disable_notifications:
-                self.log.debug("Notifications disabled on %s", host.name)
-                continue
-
-            self.log.info("Sending %s notifications to %s", len(notifications), host.name)
-            for notification in notifications:
-                host.notify(notification)
+            host.notify(notification)
 
     # -------------- Library Scanning --------------
     def scan_directory(self, show_dir: str, skip_active: bool = False) -> list[EpisodeDetails]:
