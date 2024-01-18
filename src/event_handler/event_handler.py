@@ -49,7 +49,7 @@ class EventHandler:
                     return False
 
             sleep(delay)
-        sec_per_nfo = int(elapsed.total_seconds / len(nfos))
+        sec_per_nfo = int(elapsed.total_seconds() / len(nfos))
         self.log.info("All required NFO files were found after %s. %ss per file.", elapsed, sec_per_nfo)
         return True
 
