@@ -284,3 +284,9 @@ class EventHandler:
 
     def test(self) -> None:
         """Sonarr Tested this script"""
+        self.log.info("Test Event Detected")
+
+        if self.cfg.notifications.on_test:
+            title = "Sonarr - Testing"
+            msg = "Test Passed"
+            self.kodi.notify(Notification(title=title, msg=msg))
