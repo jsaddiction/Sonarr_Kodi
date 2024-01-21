@@ -55,16 +55,13 @@ class HostConfig:
     @classmethod
     def from_dict(cls: Type["HostConfig"], data: dict) -> Self:
         """Get Instance from dict values"""
-        try:
-            return cls(
-                name=data["name"],
-                ip_addr=data["ip_addr"],
-                port=data["port"],
-                user=data["user"],
-                password=data["password"],
-                enabled=data["enabled"],
-                disable_notifications=data["disable_notifications"],
-                priority=data["priority"],
-            )
-        except (KeyError, ValueError):
-            pass
+        return cls(
+            name=data["name"],
+            ip_addr=data["ip_addr"],
+            port=data["port"],
+            user=data["user"],
+            password=data["password"],
+            enabled=data["enabled"],
+            disable_notifications=data["disable_notifications"],
+            priority=data["priority"],
+        )
