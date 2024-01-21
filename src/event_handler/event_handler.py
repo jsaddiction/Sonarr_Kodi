@@ -294,7 +294,7 @@ class EventHandler:
 
         if self.cfg.notifications.on_application_update:
             title = "Sonarr - Application Update"
-            msg = f"{self.env.update_message} :: New Version {self.env.update_new_vers}"
+            msg = f"{self.env.update_message}"
             self.kodi.notify(Notification(title=title, msg=msg))
 
     def manual_interaction_required(self) -> None:
