@@ -281,6 +281,12 @@ class EventHandler:
 
     def manual_interaction_required(self) -> None:
         """Manual Interaction Required"""
+        self.log.info("Manual Interaction Event Detected")
+
+        if self.cfg.notifications.on_manual_interaction_required:
+            title = "Sonarr - Manual Interaction Required"
+            msg = f"Sonarr needs help with {self.env.series_title} ({self.env.series_year})"
+            self.kodi.notify(Notification(title=title, msg=msg))
 
     def test(self) -> None:
         """Sonarr Tested this script"""
