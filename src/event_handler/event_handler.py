@@ -272,6 +272,12 @@ class EventHandler:
 
     def health_issue(self) -> None:
         """Experienced a Health Issue"""
+        self.log.info("Health Issue Event Detected")
+
+        if self.cfg.notifications.on_health_issue:
+            title = "Sonarr - Health Issue"
+            msg = f"{self.env.health_issue_type} :: {self.env.health_issue_msg}"
+            self.kodi.notify(Notification(title=title, msg=msg))
 
     def health_restored(self) -> None:
         """Health Restored"""
