@@ -278,6 +278,12 @@ class EventHandler:
 
     def application_update(self) -> None:
         """Application Updated"""
+        self.log.info("Application Update Event Detected")
+
+        if self.cfg.notifications.on_application_update:
+            title = "Sonarr - Application Update"
+            msg = f"{self.env.update_message}"
+            self.kodi.notify(Notification(title=title, msg=msg))
 
     def manual_interaction_required(self) -> None:
         """Manual Interaction Required"""
