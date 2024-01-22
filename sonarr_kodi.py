@@ -16,7 +16,7 @@ def main() -> None:
     config_log(CFG.logs)
     log = logging.getLogger("Sonarr-Kodi")
     log.info("Starting...")
-    kodi = LibraryManager(CFG.hosts)
+    kodi = LibraryManager(CFG.hosts, CFG.library.path_mapping)
     event_handler = EventHandler(ENV, CFG, kodi)
 
     log.debug("=========Parsed Environment========")

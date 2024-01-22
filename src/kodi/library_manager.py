@@ -4,7 +4,7 @@ import logging
 from time import sleep
 from dataclasses import asdict
 from .rpc_client import KodiRPC
-from .config import HostConfig
+from .config import HostConfig, PathMapping
 from .exceptions import APIError, ScanTimeout
 from .models import EpisodeDetails, ShowDetails, Source, Notification
 
@@ -15,7 +15,7 @@ class LibraryManager:
     instances of kodi.
     """
 
-    def __init__(self, host_configs: list[HostConfig]) -> None:
+    def __init__(self, host_configs: list[HostConfig], path_maps: list[PathMapping]) -> None:
         self.log = logging.getLogger("Kodi-Library-Manager")
         self.hosts: list[KodiRPC] = []
 
@@ -27,6 +27,7 @@ class LibraryManager:
 
             # Create RPC Host
             host_cfg = HostConfig(**asdict(cfg))
+            host_cfg.path_maps = path_maps
             host = KodiRPC(host_cfg)
 
             # Test and store host
