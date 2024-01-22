@@ -1,7 +1,6 @@
 """Sonarr Kodi Config Models"""
 
 import logging
-import sys
 from dataclasses import dataclass, field
 from typing import Any, Type, Self
 from enum import Enum
@@ -19,6 +18,11 @@ class LogLevels(Enum):
     CRITICAL = "CRITICAL"
 
     @classmethod
+    def values(cls) -> list[str]:
+        """List of values within LogLevels"""
+        return [member.value for member in cls]
+
+    @classmethod
     def _missing_(cls, value: object) -> Any:
         value = value.upper()
         for member in cls:
@@ -31,53 +35,30 @@ class LogLevels(Enum):
 class LogCfg:
     """Log Config"""
 
-    level: LogLevels
-    write_file: bool
-
-    def __post_init__(self) -> None:
-        try:
-            LogLevels(self.level)
-        except ValueError:
-            raise ValueError("Invalid logs.level. Must be one of [debug, info, warning, critical]") from None
-
-        assert isinstance(self.write_file, bool), "Invalid logs.write_file. Must be one of [true, false, yes, no]"
+    level: LogLevels = field(metadata={"type": str})
+    write_file: bool = field(metadata={"type": bool})
 
     @classmethod
     def from_dict(cls: Type["LogCfg"], data: dict) -> Self:
         """Get Instance from dict values"""
-        try:
-            return cls(level=LogLevels(data["level"]).value, write_file=data["write_file"])
-        except KeyError as err:
-            log.critical("Invalid Logs Config. %s key not found.", err)
-            sys.exit(1)
-        except ValueError as err:
-            log.critical("Invalid Logs Config. %s", err)
-            sys.exit(1)
+
+        # Parse into dataclass
+        return cls(level=LogLevels(data["level"]).value, write_file=data["write_file"])
 
 
 @dataclass
 class PathMapping:
     """Sonarr to Host path maps"""
 
-    sonarr: str
-    kodi: str
-
-    def __post_init__(self) -> None:
-        assert isinstance(self.sonarr, str), "Invalid library.path_mapping.sonarr, Must be a string"
-
-        assert isinstance(self.kodi, str), "Invalid library.path_mapping.kodi, Must be a string"
+    sonarr: str = field(metadata={"type": str})
+    kodi: str = field(metadata={"type": str})
 
     @classmethod
     def from_dict(cls: Type["PathMapping"], data: dict) -> Self:
         """Get Instance from dict values"""
-        try:
-            return cls(sonarr=data["sonarr"], kodi=data["kodi"])
-        except KeyError as err:
-            log.critical("Invalid path_mapping Config. %s key not found.", err)
-            sys.exit(1)
-        except AssertionError as err:
-            log.critical(err)
-            sys.exit(1)
+
+        # Parse into dataclass
+        return cls(sonarr=data["sonarr"], kodi=data["kodi"])
 
 
 @dataclass
@@ -89,46 +70,26 @@ class LibraryCfg:
     full_scan_fallback: bool
     wait_for_nfo: bool
     nfo_timeout_minuets: int
-    path_mapping: list[PathMapping]
-
-    def __post_init__(self) -> None:
-        assert isinstance(
-            self.clean_after_update, bool
-        ), "Invalid library.clean_after_update. Must Be one of [true, false, yes, no]"
-
-        assert isinstance(
-            self.wait_for_nfo, bool
-        ), "Invalid library.wait_for_nfo. Must Be one of [true, false, yes, no]"
-
-        assert isinstance(self.nfo_timeout_minuets, int), "Invalid library.nfo_timeout_minuets. Must be an integer"
-
-        assert isinstance(
-            self.skip_active, bool
-        ), "Invalid library.update_while_playing. Must Be one of [true, false, yes, no]"
-
-        assert isinstance(
-            self.full_scan_fallback, bool
-        ), "Invalid library.full_scan_fallback. Must Be one of [true, false, yes, no]"
+    path_mapping: list[PathMapping] = field(default_factory=list)
 
     @classmethod
     def from_dict(cls: Type["LibraryCfg"], data: dict) -> Self:
         """Get Instance from dict values"""
-        path_mapping = []
-        if "path_mapping" in data and data["path_mapping"] is not None:
-            path_mapping = [PathMapping.from_dict(x) for x in data["path_mapping"]]
 
-        try:
-            return cls(
-                clean_after_update=data["clean_after_update"],
-                wait_for_nfo=data["wait_for_nfo"],
-                nfo_timeout_minuets=data["nfo_timeout_minuets"],
-                skip_active=data["skip_active"],
-                full_scan_fallback=data["full_scan_fallback"],
-                path_mapping=path_mapping,
-            )
-        except KeyError as err:
-            log.critical("Invalid Library Config. %s key not found.", err)
-            sys.exit(1)
+        # Parse into dataclass
+        library_cfg = cls(
+            clean_after_update=data["clean_after_update"],
+            wait_for_nfo=data["wait_for_nfo"],
+            nfo_timeout_minuets=data["nfo_timeout_minuets"],
+            skip_active=data["skip_active"],
+            full_scan_fallback=data["full_scan_fallback"],
+        )
+
+        # Check for and add optional path mapping definitions
+        if "path_mapping" in data and data["path_mapping"] is not None:
+            library_cfg.path_mapping = [PathMapping.from_dict(x) for x in data["path_mapping"]]
+
+        return library_cfg
 
 
 @dataclass
@@ -148,75 +109,25 @@ class Notifications:
     on_manual_interaction_required: bool
     on_test: bool
 
-    def __post_init__(self) -> None:
-        assert isinstance(self.on_grab, bool), "Invalid notifications.on_grab. Must Be one of [true, false, yes, no]"
-
-        assert isinstance(
-            self.on_download_new, bool
-        ), "Invalid notifications.on_download_new. Must Be one of [true, false, yes, no]"
-
-        assert isinstance(
-            self.on_download_upgrade, bool
-        ), "Invalid notifications.on_download_upgrade. Must Be one of [true, false, yes, no]"
-
-        assert isinstance(
-            self.on_rename, bool
-        ), "Invalid notifications.on_rename. Must Be one of [true, false, yes, no]"
-
-        assert isinstance(
-            self.on_delete, bool
-        ), "Invalid notifications.on_delete. Must Be one of [true, false, yes, no]"
-
-        assert isinstance(
-            self.on_series_add, bool
-        ), "Invalid notifications.on_series_add. Must Be one of [true, false, yes, no]"
-
-        assert isinstance(
-            self.on_series_delete, bool
-        ), "Invalid notifications.on_series_delete. Must Be one of [true, false, yes, no]"
-
-        assert isinstance(
-            self.on_health_issue, bool
-        ), "Invalid notifications.on_health_issue. Must Be one of [true, false, yes, no]"
-
-        assert isinstance(
-            self.on_health_restored, bool
-        ), "Invalid notifications.on_health_restored. Must Be one of [true, false, yes, no]"
-
-        assert isinstance(
-            self.on_application_update, bool
-        ), "Invalid notifications.on_application_update. Must Be one of [true, false, yes, no]"
-
-        assert isinstance(
-            self.on_manual_interaction_required, bool
-        ), "Invalid notifications.on_manual_interaction_required. Must Be one of [true, false, yes, no]"
-
-        assert isinstance(self.on_test, bool), "Invalid notifications.on_test. Must Be one of [true, false, yes, no]"
-
     @classmethod
     def from_dict(cls: Type["Notifications"], data: dict) -> Self:
         """Get Instance from dict values"""
-        try:
-            return cls(
-                on_grab=data["on_grab"],
-                on_download_new=data["on_download_new"],
-                on_download_upgrade=data["on_download_upgrade"],
-                on_rename=data["on_rename"],
-                on_delete=data["on_delete"],
-                on_series_add=data["on_series_add"],
-                on_series_delete=data["on_series_delete"],
-                on_health_issue=data["on_health_issue"],
-                on_health_restored=data["on_health_restored"],
-                on_application_update=data["on_application_update"],
-                on_manual_interaction_required=data["on_manual_interaction_required"],
-                on_test=data["on_test"],
-            )
-        except KeyError as err:
-            log.critical("Invalid hosts.notifications Config. %s key not found.", err)
-            sys.exit(1)
-        except ValueError as err:
-            log.critical("Invalid host.notifications Config. %s", err)
-            sys.exit(1)
+
+        # Parse into dataclass
+        return cls(
+            on_grab=data["on_grab"],
+            on_download_new=data["on_download_new"],
+            on_download_upgrade=data["on_download_upgrade"],
+            on_rename=data["on_rename"],
+            on_delete=data["on_delete"],
+            on_series_add=data["on_series_add"],
+            on_series_delete=data["on_series_delete"],
+            on_health_issue=data["on_health_issue"],
+            on_health_restored=data["on_health_restored"],
+            on_application_update=data["on_application_update"],
+            on_manual_interaction_required=data["on_manual_interaction_required"],
+            on_test=data["on_test"],
+        )
 
 
 @dataclass
@@ -231,18 +142,11 @@ class Config:
     @classmethod
     def from_dict(cls: Type["Config"], data: dict) -> Self:
         """Get Instance from dict values"""
-        try:
-            log_cfg = data["logs"]
-            library_cfg = data["library"]
-            hosts_cfg = data["hosts"]
-            notification_cfg = data["notifications"]
-        except KeyError as err:
-            log.critical("Invalid Config. %s key not found.", err)
-            sys.exit(1)
 
+        # Parse into dataclass
         return cls(
-            logs=LogCfg.from_dict(log_cfg),
-            library=LibraryCfg.from_dict(library_cfg),
-            notifications=Notifications.from_dict(notification_cfg),
-            hosts=[HostConfig.from_dict(x) for x in hosts_cfg],
+            logs=LogCfg.from_dict(data["logs"]),
+            library=LibraryCfg.from_dict(data["library"]),
+            notifications=Notifications.from_dict(data["notifications"]),
+            hosts=[HostConfig.from_dict(x) for x in data["hosts"]],
         )
