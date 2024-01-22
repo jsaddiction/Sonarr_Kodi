@@ -50,15 +50,8 @@ class LogCfg:
 class PathMapping:
     """Sonarr to Host path maps"""
 
-    sonarr: str = field(metadata={"type": str})
-    kodi: str = field(metadata={"type": str})
-
-    @classmethod
-    def from_dict(cls: Type["PathMapping"], data: dict) -> Self:
-        """Get Instance from dict values"""
-
-        # Parse into dataclass
-        return cls(sonarr=data["sonarr"], kodi=data["kodi"])
+    sonarr: str
+    kodi: str
 
 
 @dataclass
@@ -77,17 +70,10 @@ class LibraryCfg:
         """Get Instance from dict values"""
 
         # Parse into dataclass
-        library_cfg = cls(
-            clean_after_update=data["clean_after_update"],
-            wait_for_nfo=data["wait_for_nfo"],
-            nfo_timeout_minuets=data["nfo_timeout_minuets"],
-            skip_active=data["skip_active"],
-            full_scan_fallback=data["full_scan_fallback"],
-        )
-
-        # Check for and add optional path mapping definitions
-        if "path_mapping" in data and data["path_mapping"] is not None:
-            library_cfg.path_mapping = [PathMapping.from_dict(x) for x in data["path_mapping"]]
+        path_maps = data.pop("path_mapping")
+        library_cfg = cls(**data)
+        if path_maps:
+            library_cfg.path_mapping = [PathMapping(**x) for x in path_maps]
 
         return library_cfg
 
@@ -109,26 +95,6 @@ class Notifications:
     on_manual_interaction_required: bool
     on_test: bool
 
-    @classmethod
-    def from_dict(cls: Type["Notifications"], data: dict) -> Self:
-        """Get Instance from dict values"""
-
-        # Parse into dataclass
-        return cls(
-            on_grab=data["on_grab"],
-            on_download_new=data["on_download_new"],
-            on_download_upgrade=data["on_download_upgrade"],
-            on_rename=data["on_rename"],
-            on_delete=data["on_delete"],
-            on_series_add=data["on_series_add"],
-            on_series_delete=data["on_series_delete"],
-            on_health_issue=data["on_health_issue"],
-            on_health_restored=data["on_health_restored"],
-            on_application_update=data["on_application_update"],
-            on_manual_interaction_required=data["on_manual_interaction_required"],
-            on_test=data["on_test"],
-        )
-
 
 @dataclass
 class Config:
@@ -147,6 +113,6 @@ class Config:
         return cls(
             logs=LogCfg.from_dict(data["logs"]),
             library=LibraryCfg.from_dict(data["library"]),
-            notifications=Notifications.from_dict(data["notifications"]),
+            notifications=Notifications(**data["notifications"]),
             hosts=[HostConfig.from_dict(x) for x in data["hosts"]],
         )

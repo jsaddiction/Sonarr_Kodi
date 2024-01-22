@@ -4,8 +4,8 @@ import os
 import sys
 import stat
 import shutil
+import ipaddress
 import yaml
-from typing import List
 from .models import Config, LogLevels
 
 APP_DIR = os.path.abspath(os.path.join(__file__, "../../../"))
@@ -59,7 +59,7 @@ class ConfigError(Exception):
     """An Error was found in the config file"""
 
 
-def validate_config(config: dict, schema: dict, path: List[str] = None) -> None:
+def validate_config(config: dict, schema: dict, path: list[str] = None) -> None:
     """Validate Config dict"""
     if path is None:
         path = []
@@ -83,20 +83,33 @@ def validate_config(config: dict, schema: dict, path: List[str] = None) -> None:
             for i, item in enumerate(actual_value):
                 if not isinstance(item, dict):
                     raise ConfigError(f"Each item in '{current_path_str}' list must be a dictionary.")
-                validate_config(item, expected_type[0], current_path + [f"{i}"])
+                validate_config(item, expected_type[0], current_path + [f"[{i}]"])
         else:
             # Validate primitive types
-            if key == "level" and not isinstance(actual_value, str):
-                raise ConfigError(f"Invalid type for '{current_path_str}', expected str, got {type(actual_value)}")
-
-            if key == "level" and actual_value.upper() not in LogLevels.values():
-                opts = ", ".join(LogLevels.values())
-                raise ConfigError(f"Invalid value for '{current_path_str}', options: {opts}, got {actual_value}")
-
             if not isinstance(actual_value, expected_type):
-                raise ConfigError(
-                    f"Invalid type for '{current_path_str}', expected {expected_type}, got {type(actual_value)}."
-                )
+                val_type = type(actual_value)
+                raise ConfigError(f"Invalid type for '{current_path_str}', expected {expected_type}, got {val_type}.")
+
+            # Validate log.level field
+            if key == "level":
+                if actual_value.upper() not in LogLevels.values():
+                    opts = ", ".join(LogLevels.values())
+                    raise ConfigError(f"Invalid value for '{current_path_str}', options: {opts}, got {actual_value}")
+
+            # Validate host[x].ip_addr field
+            if key == "ip_addr":
+                try:
+                    ipaddress.ip_address(actual_value)
+                except ValueError as e:
+                    raise ConfigError(f"Invalid value for '{current_path_str}' got {actual_value}") from e
+                continue
+
+            # Validate host[x].port field
+            if key == "port":
+                if actual_value < 0 or actual_value > 65535:
+                    raise ConfigError(
+                        f"Invalid value for '{current_path_str}' got {actual_value}. Must be between 0-65535"
+                    )
 
 
 def _read_config(path: str) -> Config:
@@ -115,7 +128,7 @@ def _read_config(path: str) -> Config:
     try:
         validate_config(cfg, CONFIG_SCHEMA)
     except ConfigError as e:
-        print(f"Invalid Config. Error: {e}")
+        print(f"Invalid Config. {e}")
         sys.exit(1)
 
     # Build config dataclass
@@ -124,7 +137,6 @@ def _read_config(path: str) -> Config:
 
 def get_config() -> Config:
     """Read config file, copy default if none exists"""
-    print(LogLevels)
     if not os.path.isfile(CONFIG_PATH):
         try:
             shutil.copy(DEFAULT_CFG_PATH, CONFIG_PATH)
