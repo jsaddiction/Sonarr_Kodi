@@ -1,11 +1,9 @@
 """Sonarr Kodi Configuration"""
 
-from .config_parser import get_config
 from .models import Config
-
-CFG = get_config()
+from .config_parser import ConfigParser
 
 __all__ = [
-    "CFG",
     "Config",
+    "ConfigParser",
 ]

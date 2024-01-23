@@ -4,20 +4,29 @@
 import logging
 import sys
 from os import environ
+from pathlib import Path
 from src import config_log
-from src.config import CFG
+from src.config import ConfigParser
 from src.kodi import LibraryManager
 from src.environment import ENV, Events
 from src.event_handler import EventHandler
 
+APP_DIR = Path(__file__).resolve().parent
+CONFIG_PATH = APP_DIR / "settings.yaml"
+
 
 def main() -> None:
     """Main Entry Point"""
-    config_log(CFG.logs)
+    cfg_parser = ConfigParser()
+    cfg = cfg_parser.get_config(CONFIG_PATH)
+    config_log(cfg.logs)
     log = logging.getLogger("Sonarr-Kodi")
+    if cfg_parser.is_default(cfg):
+        log.warning("Default config file detected. Please EDIT %s", CONFIG_PATH)
+        sys.exit(0)
     log.info("Starting...")
-    kodi = LibraryManager(CFG.hosts, CFG.library.path_mapping)
-    event_handler = EventHandler(ENV, CFG, kodi)
+    kodi = LibraryManager(cfg.hosts, cfg.library.path_mapping)
+    event_handler = EventHandler(ENV, cfg, kodi)
 
     log.debug("=========Parsed Environment========")
     for k, v in environ.items():
