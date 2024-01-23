@@ -70,7 +70,7 @@ class LibraryCfg:
         """Get Instance from dict values"""
 
         # Parse into dataclass
-        path_maps = data.pop("path_mapping")
+        path_maps = data.pop("path_mapping", None)
         library_cfg = cls(**data)
         if path_maps:
             library_cfg.path_mapping = [PathMapping(**x) for x in path_maps]
