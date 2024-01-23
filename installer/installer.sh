@@ -26,6 +26,10 @@ echo "************ Install Script Dependencies ************"
 pip install --upgrade pip --no-cache-dir --break-system-packages
 pip install -r /config/scripts/Sonarr_Kodi/requirements.txt --no-cache-dir --break-system-packages
 
+if [ ! -f /config/scripts/Sonarr_Kodi/settings.yaml ]; then
+	echo "********** Adding Default Config ****************"
+	cp /config/scripts/Sonarr_Kodi/src/config/default_config.yaml /config/scripts/Sonarr_Kodi/settings.yaml
+
 echo "************ Set Permissions ************"
 chmod 777 -R /config/scripts/Sonarr_Kodi
 

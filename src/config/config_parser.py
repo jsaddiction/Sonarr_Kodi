@@ -3,10 +3,10 @@
 import os
 import sys
 import stat
-import shutil
 import ipaddress
 import yaml
 from .models import Config, LogLevels
+from .exceptions import ConfigError
 
 APP_DIR = os.path.abspath(os.path.join(__file__, "../../../"))
 CONFIG_PATH = os.path.join(APP_DIR, "settings.yaml")
@@ -53,10 +53,6 @@ CONFIG_SCHEMA = {
         }
     ],
 }
-
-
-class ConfigError(Exception):
-    """An Error was found in the config file"""
 
 
 def validate_config(config: dict, schema: dict, path: list[str] = None) -> None:
@@ -112,43 +108,22 @@ def validate_config(config: dict, schema: dict, path: list[str] = None) -> None:
                     )
 
 
-def _read_config(path: str) -> Config:
-    if not os.path.isfile(path):
-        raise FileNotFoundError("User Config file not found.")
-
-    print(f"Reading file: {os.path.abspath(path)}")
-
+def get_config() -> Config:
+    """Read config and return Config dataclass"""
     try:
-        with open(path, mode="r", encoding="utf8") as file:
+        with open(CONFIG_PATH, mode="r", encoding="utf8") as file:
             cfg = yaml.safe_load(file.read())
-    except OSError as err:
-        raise OSError(f"Failed to read  config file. ERROR: {err}") from None
+    except FileNotFoundError as e:
+        print(f"Config file not found at '{CONFIG_PATH}' Error: {e}")
+        sys.exit(1)
+    except OSError as e:
+        print(f"Failed to read config file. Error: {e}")
+        sys.exit(1)
 
-    # Validate Config file
     try:
         validate_config(cfg, CONFIG_SCHEMA)
     except ConfigError as e:
-        print(f"Invalid Config. {e}")
+        print(f"Invalid Config file. {e}")
         sys.exit(1)
 
-    # Build config dataclass
     return Config.from_dict(cfg)
-
-
-def get_config() -> Config:
-    """Read config file, copy default if none exists"""
-    if not os.path.isfile(CONFIG_PATH):
-        try:
-            shutil.copy(DEFAULT_CFG_PATH, CONFIG_PATH)
-            os.chmod(CONFIG_PATH, RW_PERMS)
-        except OSError as err:
-            raise OSError(f"Failed to write default config file. ERROR: {err}") from None
-
-    def_config = _read_config(DEFAULT_CFG_PATH)
-    usr_config = _read_config(CONFIG_PATH)
-
-    if def_config == usr_config:
-        print(f"Default config detected. Please Edit {CONFIG_PATH} before using this script.")
-        sys.exit(0)
-
-    return usr_config
