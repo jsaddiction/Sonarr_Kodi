@@ -311,7 +311,6 @@ class LibraryManager:
 
     def show_exists(self, series_path: str) -> list[ShowDetails]:
         """Check if a show exists, return list of shows with series_path"""
-        self.log.info("Checking for existing show")
         for host in self.hosts:
             try:
                 return host.get_shows_from_dir(series_path)
