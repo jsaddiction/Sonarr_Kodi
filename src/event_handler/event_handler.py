@@ -58,12 +58,16 @@ class EventHandler:
         """Grab Events"""
         self.log.info("Grab Event Detected")
 
+        # Skip notifications if disabled
+        if not self.cfg.notifications.on_grab:
+            self.log.info("Grab notifications disabled.")
+            return
+
         # Send notification for each attempted download
-        if self.cfg.notifications.on_grab:
-            title = "Sonarr - Attempting Download"
-            for ep_num, ep_title in zip(self.env.release_episode_numbers, self.env.release_episode_titles):
-                msg = f"{self.env.series_title} - S{self.env.release_season_number:02}E{ep_num:02} - {ep_title}"
-                self.kodi.notify(Notification(title=title, msg=msg))
+        title = "Sonarr - Attempting Download"
+        for ep_num, ep_title in zip(self.env.release_episode_numbers, self.env.release_episode_titles):
+            msg = f"{self.env.series_title} - S{self.env.release_season_number:02}E{ep_num:02} - {ep_title}"
+            self.kodi.notify(Notification(title=title, msg=msg))
 
     def download_new(self) -> None:
         """Downloaded a new episode"""
@@ -103,11 +107,15 @@ class EventHandler:
         # Update GUI on clients not previously scanned and not playing
         self.kodi.update_guis()
 
+        # Skip notifications if disabled
+        if not self.cfg.notifications.on_download_new:
+            self.log.info("Download New Episode notifications disabled.")
+            return
+
         # Notify clients
-        if self.cfg.notifications.on_download_new:
-            title = "Sonarr - Downloaded New Episode"
-            for episode in new_episodes:
-                self.kodi.notify(Notification(title=title, msg=episode))
+        title = "Sonarr - Downloaded New Episode"
+        for episode in new_episodes:
+            self.kodi.notify(Notification(title=title, msg=episode))
 
     def download_upgrade(self) -> None:
         """Downloaded an upgraded episode file"""
@@ -156,11 +164,15 @@ class EventHandler:
         # update remaining guis
         self.kodi.update_guis()
 
+        # Skip notifications if disabled
+        if not self.cfg.notifications.on_download_upgrade:
+            self.log.info("Upgrade Episode notifications disabled.")
+            return
+
         # notify clients
-        if self.cfg.notifications.on_download_upgrade:
-            title = "Sonarr - Upgraded Episode"
-            for episode in new_episodes:
-                self.kodi.notify(Notification(title=title, msg=episode))
+        title = "Sonarr - Upgraded Episode"
+        for episode in new_episodes:
+            self.kodi.notify(Notification(title=title, msg=episode))
 
     def rename(self) -> None:
         """Renamed an episode file"""
@@ -202,11 +214,15 @@ class EventHandler:
         # Update GUIs
         self.kodi.update_guis()
 
+        # Skip notifications if disabled
+        if not self.cfg.notifications.on_rename:
+            self.log.info("Rename Episode notifications disabled.")
+            return
+
         # Notify clients
-        if self.cfg.notifications.on_rename:
-            title = "Sonarr - Renamed Episode"
-            for episode in new_episodes:
-                self.kodi.notify(Notification(title=title, msg=episode))
+        title = "Sonarr - Renamed Episode"
+        for episode in new_episodes:
+            self.kodi.notify(Notification(title=title, msg=episode))
 
     def episode_delete(self) -> None:
         """Remove an episode"""
@@ -230,87 +246,123 @@ class EventHandler:
         # Update remaining guis
         self.kodi.update_guis()
 
+        # Skip notifications if disabled
+        if not self.cfg.notifications.on_delete:
+            self.log.info("Delete Episode notifications disabled.")
+            return
+
         # Notify clients
-        if self.cfg.notifications.on_delete:
-            title = "Sonarr - Deleted Episode"
-            for episode in removed_episodes:
-                self.kodi.notify(Notification(title=title, msg=episode))
+        title = "Sonarr - Deleted Episode"
+        for episode in removed_episodes:
+            self.kodi.notify(Notification(title=title, msg=episode))
 
     def series_add(self) -> None:
         """Adding a Series"""
         self.log.info("Series Add Event Detected")
 
-        if self.cfg.notifications.on_series_add:
-            title = "Sonarr - Series Added"
-            self.kodi.notify(Notification(title=title, msg=f"{self.env.series_title} ({self.env.series_year})"))
+        # Skip notifications if disabled
+        if not self.cfg.notifications.on_series_add:
+            self.log.info("Series Add notifications disabled.")
+            return
+
+        # Notify clients
+        title = "Sonarr - Series Added"
+        self.kodi.notify(Notification(title=title, msg=f"{self.env.series_title} ({self.env.series_year})"))
 
     def series_delete(self) -> None:
         """Deleting a Series"""
         self.log.info("Series Delete Event Detected")
 
-        # Exit early if no files were deleted
-        if not self.env.series_deleted_files:
-            self.log.info("No files were deleted. Not editing library.")
-            title = "Sonarr Deleted Show"
-            self.kodi.notify(Notification(title=title, msg=f"{self.env.series_title} ({self.env.series_year})"))
+        # Edit library only if files were deleted
+        if self.env.series_deleted_files:
+            # Remove Show
+            self.kodi.remove_show(self.env.series_path)
+
+            # Optionally, Clean Library
+            if self.cfg.library.clean_after_update:
+                self.kodi.clean_library()
+
+            # Update GUIs
+            self.kodi.update_guis()
+        else:
+            self.log.info("No files were deleted. Not editing library or sending notifications.")
             return
 
-        # Remove Show
-        self.kodi.remove_show(self.env.series_path)
-
-        # Optionally, Clean Library
-        if self.cfg.library.clean_after_update:
-            self.kodi.clean_library()
-
-        # Update GUIs
-        self.kodi.update_guis()
+        # Skip notifications if disabled
+        if not self.cfg.notifications.on_series_delete:
+            self.log.info("Series Delete notifications disabled.")
+            return
 
         # Notify Clients
-        if self.cfg.notifications.on_series_delete:
-            title = "Sonarr Deleted Show"
-            self.kodi.notify(Notification(title=title, msg=f"{self.env.series_title} ({self.env.series_year})"))
+        title = "Sonarr Deleted Show"
+        self.kodi.notify(Notification(title=title, msg=f"{self.env.series_title} ({self.env.series_year})"))
 
     def health_issue(self) -> None:
         """Experienced a Health Issue"""
         self.log.info("Health Issue Event Detected")
 
-        if self.cfg.notifications.on_health_issue:
-            title = "Sonarr - Health Issue"
-            msg = self.env.health_issue_msg
-            self.kodi.notify(Notification(title=title, msg=msg))
+        # Skip notifications if disabled
+        if not self.cfg.notifications.on_health_issue:
+            self.log.info("Health Issue notifications disabled.")
+            return
+
+        # Notify Clients
+        title = "Sonarr - Health Issue"
+        msg = self.env.health_issue_msg
+        self.kodi.notify(Notification(title=title, msg=msg))
 
     def health_restored(self) -> None:
         """Health Restored"""
         self.log.info("Health Restored Event Detected")
 
-        if self.cfg.notifications.on_health_restored:
-            title = "Sonarr - Health Restored"
-            msg = f"{self.env.health_restored_type} :: {self.env.health_restored_msg}"
-            self.kodi.notify(Notification(title=title, msg=msg))
+        # Skip notifications if disabled
+        if not self.cfg.notifications.on_health_restored:
+            self.log.info("Health Restored notifications disabled.")
+            return
+
+        # Notify Clients
+        title = "Sonarr - Health Restored"
+        msg = f"{self.env.health_restored_msg} Resolved"
+        self.kodi.notify(Notification(title=title, msg=msg))
 
     def application_update(self) -> None:
         """Application Updated"""
         self.log.info("Application Update Event Detected")
 
-        if self.cfg.notifications.on_application_update:
-            title = "Sonarr - Application Update"
-            msg = f"{self.env.update_message}"
-            self.kodi.notify(Notification(title=title, msg=msg))
+        # Skip notifications if disabled
+        if not self.cfg.notifications.on_application_update:
+            self.log.info("Application Update notifications disabled.")
+            return
+
+        # Notify Clients
+        title = "Sonarr - Application Update"
+        msg = f"{self.env.update_message}"
+        self.kodi.notify(Notification(title=title, msg=msg))
 
     def manual_interaction_required(self) -> None:
         """Manual Interaction Required"""
         self.log.info("Manual Interaction Event Detected")
 
-        if self.cfg.notifications.on_manual_interaction_required:
-            title = "Sonarr - Manual Interaction Required"
-            msg = f"Sonarr needs help with {self.env.series_title} ({self.env.series_year})"
-            self.kodi.notify(Notification(title=title, msg=msg))
+        # Skip notifications if disabled
+        if not self.cfg.notifications.on_manual_interaction_required:
+            self.log.info("Manual Interaction Required notifications disabled.")
+            return
+
+        # Notify Clients
+        title = "Sonarr - Manual Interaction Required"
+        msg = f"Sonarr needs help with {self.env.series_title} ({self.env.series_year})"
+        self.kodi.notify(Notification(title=title, msg=msg))
 
     def test(self) -> None:
         """Sonarr Tested this script"""
         self.log.info("Test Event Detected")
 
-        if self.cfg.notifications.on_test:
-            title = "Sonarr - Testing"
-            msg = "Test Passed"
-            self.kodi.notify(Notification(title=title, msg=msg))
+        # Skip notifications if disabled
+        if not self.cfg.notifications.on_test:
+            self.log.info("Test notifications disabled.")
+            return
+
+        # Notify Clients
+        title = "Sonarr - Testing"
+        msg = "Test Passed"
+        self.kodi.notify(Notification(title=title, msg=msg))
