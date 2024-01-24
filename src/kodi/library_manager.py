@@ -19,7 +19,7 @@ class LibraryManager:
         self.log = logging.getLogger("Kodi-Library-Manager")
         self.hosts: list[KodiRPC] = []
 
-        self.log.info("Building list of Kodi Hosts")
+        self.log.debug("Building list of Kodi Hosts")
         for cfg in host_configs:
             if not cfg.enabled:
                 self.log.debug("Skipping disabled host: %s", cfg.name)
