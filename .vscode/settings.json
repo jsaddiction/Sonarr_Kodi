@@ -8,6 +8,8 @@
     "levelname",
     "nfos",
     "playcount",
+    "playerid",
+    "playertype",
     "pydantic",
     "showdialogs",
     "showtitle",

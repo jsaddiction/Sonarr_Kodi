@@ -81,6 +81,24 @@ class KodiResponse:
 
 
 @dataclass
+class Player:
+    """A Content player"""
+
+    player_id: int
+    player_type: str
+    type: str
+
+
+@dataclass
+class PlayerItem:
+    """What the player is playing"""
+
+    item_id: int
+    label: str
+    type: str
+
+
+@dataclass
 class Source:
     """Directory of a Show"""
 

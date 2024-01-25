@@ -19,6 +19,8 @@ from .models import (
     EpisodeDetails,
     ShowDetails,
     Source,
+    Player,
+    PlayerItem,
 )
 
 
@@ -187,6 +189,39 @@ class KodiRPC:
             return str(PurePosixPath(path).parent)
         return str(PureWindowsPath(path).parent)
 
+    def _get_active_players(self) -> list[Player]:
+        """Get a list of player ids that are playing a file"""
+        active_players: list[Player] = []
+
+        resp = self._req("Player.GetActivePlayers")
+        if not resp.is_valid():
+            return active_players
+
+        for active_player in resp.result:
+            active_players.append(
+                Player(
+                    player_id=active_player["playerid"],
+                    player_type=active_player["playertype"],
+                    type=active_player["type"],
+                )
+            )
+
+        return active_players
+
+    def _get_player_item(self, player_id: int) -> PlayerItem | None:
+        """Get items a given player is playing"""
+        params = {"playerid": player_id}
+        resp = self._req("Player.GetItem", params=params)
+        if not resp.is_valid("item"):
+            return None
+
+        data = resp.result["item"]
+        return PlayerItem(
+            item_id=data["id"],
+            label=data["label"],
+            type=data["type"],
+        )
+
     # used local only
     def _wait_for_video_scan(self) -> timedelta:
         """Wait for video scan to complete"""
@@ -350,6 +385,27 @@ class KodiRPC:
             return
 
     # ----------------- Episode Methods ---------------
+    def current_playing_episode(self) -> EpisodeDetails | None:
+        """Returns Episode if one is currently playing"""
+        players = self._get_active_players()
+        if not players:
+            return None
+
+        for player in players:
+            # Skip player if not a video
+            if player.type.lower() != "video":
+                continue
+
+            # Get the item playing and continue if not found
+            item = self._get_player_item(player.player_id)
+            if not item:
+                continue
+
+            # Skip player if not an episode
+            if item.type != "episode":
+                continue
+
+            return self.get_episode_from_id(item.item_id)
 
     # used remote only
     def set_episode_watched_state(self, episode: EpisodeDetails, new_ep_id: int) -> None:
