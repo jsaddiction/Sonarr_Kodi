@@ -294,7 +294,6 @@ class KodiRPC:
 
     # --------------- Global Methods -----------------
 
-    # used remote only
     def scan_series_dir(self, directory: str) -> None:
         """Scan a directory"""
         # Ensure trailing slash
@@ -313,7 +312,6 @@ class KodiRPC:
         self.log.info("Scan completed in %s", elapsed)
         self.library_scanned = True
 
-    # used remote only
     def full_video_scan(self) -> None:
         """Perform full video library scan"""
         params = {"showdialogs": False}
@@ -325,7 +323,6 @@ class KodiRPC:
         self.log.info("Scan completed in %s", elapsed)
         self.library_scanned = True
 
-    # not used yet
     def clean_video_library(self) -> None:
         """Clean Video Library"""
         params = {"showdialogs": False, "content": "tvshows"}
@@ -340,7 +337,6 @@ class KodiRPC:
         self._wait_for_video_scan()
         self.library_scanned = True
 
-    # used remote only
     def get_show_sources(self) -> list[Source]:
         """Get all sources which contain at least one episode of a Tv Show"""
         params = {"media": "video"}
@@ -352,7 +348,6 @@ class KodiRPC:
 
         return [Source(**x) for x in resp.result["sources"]]
 
-    # used remote only
     def update_gui(self) -> None:
         """Update GUI|Widgets by scanning a non existent path"""
         if self.library_scanned:
@@ -365,7 +360,6 @@ class KodiRPC:
         if not resp.is_valid("OK"):
             self.log.info("Failed to update GUI.")
 
-    # used remote only
     def notify(self, notification: Notification) -> None:
         """Send GUI Notification to Kodi Host"""
         if self.disable_notifications:
@@ -405,9 +399,11 @@ class KodiRPC:
             if item.type != "episode":
                 continue
 
-            return self.get_episode_from_id(item.item_id)
+            try:
+                return self.get_episode_from_id(item.item_id)
+            except APIError:
+                return None
 
-    # used remote only
     def set_episode_watched_state(self, episode: EpisodeDetails, new_ep_id: int) -> None:
         """Set Episode Watched State"""
         self.log.debug("Setting watched state %s on %s", episode.watched_state, episode)
@@ -428,7 +424,6 @@ class KodiRPC:
         if not resp.is_valid("OK"):
             raise APIError("Invalid response while setting watched state.")
 
-    # used remote only
     def get_all_episodes(self) -> list[EpisodeDetails]:
         """Get all episodes in library, waits upto a minuet for response"""
         self.log.debug("Getting all episodes")
@@ -440,7 +435,6 @@ class KodiRPC:
 
         return self._parse_ep_details(resp.result["episodes"])
 
-    # used remote only, Path mapped
     def get_episodes_from_file(self, file_path: str) -> list[EpisodeDetails]:
         """Get details of episodes given a file_path"""
         mapped_path = self._map_path(file_path)
@@ -464,7 +458,6 @@ class KodiRPC:
 
         return self._parse_ep_details(resp.result["episodes"])
 
-    # used remote only
     def get_episodes_from_dir(self, series_dir: str) -> list[EpisodeDetails]:
         """Get all episodes given a directory"""
         mapped_path = self._map_path(series_dir)
@@ -481,7 +474,6 @@ class KodiRPC:
 
         return self._parse_ep_details(resp.result["episodes"])
 
-    # used remote only
     def get_episode_from_id(self, episode_id: int) -> EpisodeDetails:
         """Get details of a specific episode"""
         params = {"episodeid": episode_id, "properties": self.EP_PROPERTIES}
@@ -497,7 +489,6 @@ class KodiRPC:
 
         return None
 
-    # used remote only
     def remove_episode(self, episode_id: int) -> None:
         """Remove an episode from library and return it's details"""
         params = {"episodeid": episode_id}
@@ -511,7 +502,6 @@ class KodiRPC:
 
     # ------------------ Show Methods ------------------
 
-    # used remote only
     def remove_tvshow(self, show_id: int) -> ShowDetails:
         """Remove a TV Show from library and return it's details"""
         show_details = self.get_show_from_id(show_id)
@@ -526,7 +516,6 @@ class KodiRPC:
 
         return show_details
 
-    # used remote only
     def get_shows_from_dir(self, directory: str) -> list[ShowDetails]:
         """Get list of shows within a directory"""
         mapped_path = self._map_path(directory)
@@ -543,7 +532,6 @@ class KodiRPC:
 
         return self._parse_show_details(resp.result["tvshows"])
 
-    # used local only
     def get_show_from_id(self, show_id: int) -> ShowDetails:
         """Get details of a specific TV Show"""
         params = {"tvshowid": show_id, "properties": self.SHOW_PROPERTIES}
