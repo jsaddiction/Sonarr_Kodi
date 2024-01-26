@@ -404,6 +404,14 @@ class KodiRPC:
             except APIError:
                 return None
 
+    def play_episode(self, episode_id: int, resume: bool = True) -> None:
+        """Play a given episode"""
+        # "Player.Open", {"item": {"episodeid": ep_id}, "options": {"resume": resume}
+        params = {"item": {"episodeid": episode_id}, "options": {"resume": resume}}
+        resp = self._req("Player.Open", params=params)
+        if not resp.is_valid("OK"):
+            raise APIError(f"Invalid response while starting episode. Error: {resp.error}")
+
     def set_episode_watched_state(self, episode: EpisodeDetails, new_ep_id: int) -> None:
         """Set Episode Watched State"""
         self.log.debug("Setting watched state %s on %s", episode.watched_state, episode)
