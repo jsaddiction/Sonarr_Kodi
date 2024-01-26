@@ -21,6 +21,8 @@ from .models import (
     Source,
     Player,
     PlayerItem,
+    EP_PROPERTIES,
+    SHOW_PROPERTIES,
 )
 
 
@@ -31,19 +33,6 @@ class KodiRPC:
     TIMEOUT = 5
     REQ_ID = 0
     HEADERS = {"Content-Type": "application/json", "Accept": "plain/text"}
-    EP_PROPERTIES = [
-        "lastplayed",
-        "playcount",
-        "file",
-        "season",
-        "episode",
-        "tvshowid",
-        "showtitle",
-        "dateadded",
-        "title",
-        "resume",
-    ]
-    SHOW_PROPERTIES = ["title", "file", "year"]
 
     def __init__(self, cfg: HostConfig) -> None:
         self.log = logging.getLogger(f"RPC_Client.{cfg.name}")
@@ -56,18 +45,6 @@ class KodiRPC:
         self.path_maps = cfg.path_maps
         self.library_scanned = False
         self.platform: Platform = None
-
-    def get_platform(self) -> Platform:
-        """Get platform of this client"""
-        params = {"booleans": [x.value for x in Platform]}
-        resp = self._req("XBMC.GetInfoBooleans", params=params)
-        if not resp.is_valid():
-            raise ValueError("Failed to get host OS info.")
-
-        for k, v in resp.result.items():
-            if v:
-                return Platform(k)
-        return Platform.UNKNOWN
 
     @property
     def is_alive(self) -> bool:
@@ -83,8 +60,7 @@ class KodiRPC:
     @property
     def is_playing(self) -> bool:
         """Return True if Kodi Host is currently playing content"""
-        resp = self._req("Player.GetActivePlayers")
-        return resp.is_valid()
+        return len(self._get_active_players()) > 0
 
     @property
     def is_scanning(self) -> bool:
@@ -165,6 +141,7 @@ class KodiRPC:
             )
         return ep_details_lst
 
+    # --------------- Helper Methods -----------------
     def _map_path(self, path: str) -> str:
         """Map external paths to configured kodi path"""
         out_str = path
@@ -222,7 +199,13 @@ class KodiRPC:
             type=data["type"],
         )
 
-    # used local only
+    def _stop_player(self, player_id: int) -> None:
+        """Stops an active player"""
+        params = {"playerid": player_id}
+        resp = self._req("Player.Stop", params=params)
+        if not resp.is_valid("OK"):
+            raise APIError(f"Failed to stop the active player. Error: {resp.error}")
+
     def _wait_for_video_scan(self) -> timedelta:
         """Wait for video scan to complete"""
         max_time_sec = 1800  # 30 Min
@@ -292,8 +275,80 @@ class KodiRPC:
             error=error,
         )
 
-    # --------------- Global Methods -----------------
+    # --------------- System Methods -----------------
+    def get_platform(self) -> Platform:
+        """Get platform of this client"""
+        params = {"booleans": [x.value for x in Platform]}
+        resp = self._req("XBMC.GetInfoBooleans", params=params)
+        if not resp.is_valid():
+            raise ValueError("Failed to get host OS info.")
 
+        for k, v in resp.result.items():
+            if v:
+                return Platform(k)
+        return Platform.UNKNOWN
+
+    # --------------- UI Methods ---------------------
+    def update_gui(self) -> None:
+        """Update GUI|Widgets by scanning a non existent path"""
+        if self.library_scanned:
+            self.log.info("Library Scanned. GUI update not required, Skipping.")
+            return
+
+        params = {"directory": "/does_not_exist/", "showdialogs": False}
+        self.log.debug("Updating GUI")
+        resp = self._req("VideoLibrary.Scan", params=params)
+        if not resp.is_valid("OK"):
+            self.log.info("Failed to update GUI.")
+
+    def notify(self, notification: Notification) -> None:
+        """Send GUI Notification to Kodi Host"""
+        if self.disable_notifications:
+            self.log.debug("Notifications disabled. Skipping")
+            return
+
+        params = {
+            "title": str(notification.title),
+            "message": str(notification.msg),
+            "displaytime": int(notification.display_time),
+            "image": notification.image,
+        }
+        self.log.info("Sending GUI Notification :: %s", notification)
+        resp = self._req("GUI.ShowNotification", params=params)
+        if not resp.is_valid("OK"):
+            self.log.warning("Failed to send notification")
+            return
+
+    # --------------- Player Methods -----------------
+    def stop_episode(self, episode: EpisodeDetails) -> bool:
+        """Stops a player if currently playing an episode, return True if was playing"""
+        for player in self._get_active_players():
+            if player.type.lower() != "video":
+                continue
+
+            # Get the item playing
+            item = self._get_player_item(player.player_id)
+            if not item or item.type != "episode":
+                continue
+
+            if item.item_id == episode.episode_id:
+                self.log.info("Stopping playback of %s", episode)
+                try:
+                    self._stop_player(player.player_id)
+                except APIError as e:
+                    self.log.warning(e)
+                return True
+        return False
+
+    def play_episode(self, episode_id: int, resume: bool = True) -> None:
+        """Play a given episode"""
+        # "Player.Open", {"item": {"episodeid": ep_id}, "options": {"resume": resume}
+        params = {"item": {"episodeid": episode_id}, "options": {"resume": resume}}
+        resp = self._req("Player.Open", params=params)
+        if not resp.is_valid("OK"):
+            raise APIError(f"Invalid response while starting episode. Error: {resp.error}")
+
+    # --------------- Library Methods ----------------
     def scan_series_dir(self, directory: str) -> None:
         """Scan a directory"""
         # Ensure trailing slash
@@ -348,70 +403,7 @@ class KodiRPC:
 
         return [Source(**x) for x in resp.result["sources"]]
 
-    def update_gui(self) -> None:
-        """Update GUI|Widgets by scanning a non existent path"""
-        if self.library_scanned:
-            self.log.info("Library Scanned. GUI update not required, Skipping.")
-            return
-
-        params = {"directory": "/does_not_exist/", "showdialogs": False}
-        self.log.debug("Updating GUI")
-        resp = self._req("VideoLibrary.Scan", params=params)
-        if not resp.is_valid("OK"):
-            self.log.info("Failed to update GUI.")
-
-    def notify(self, notification: Notification) -> None:
-        """Send GUI Notification to Kodi Host"""
-        if self.disable_notifications:
-            self.log.debug("Notifications disabled. Skipping")
-            return
-
-        params = {
-            "title": str(notification.title),
-            "message": str(notification.msg),
-            "displaytime": int(notification.display_time),
-            "image": notification.image,
-        }
-        self.log.info("Sending GUI Notification :: %s", notification)
-        resp = self._req("GUI.ShowNotification", params=params)
-        if not resp.is_valid("OK"):
-            self.log.warning("Failed to send notification")
-            return
-
     # ----------------- Episode Methods ---------------
-    def current_playing_episode(self) -> EpisodeDetails | None:
-        """Returns Episode if one is currently playing"""
-        players = self._get_active_players()
-        if not players:
-            return None
-
-        for player in players:
-            # Skip player if not a video
-            if player.type.lower() != "video":
-                continue
-
-            # Get the item playing and continue if not found
-            item = self._get_player_item(player.player_id)
-            if not item:
-                continue
-
-            # Skip player if not an episode
-            if item.type != "episode":
-                continue
-
-            try:
-                return self.get_episode_from_id(item.item_id)
-            except APIError:
-                return None
-
-    def play_episode(self, episode_id: int, resume: bool = True) -> None:
-        """Play a given episode"""
-        # "Player.Open", {"item": {"episodeid": ep_id}, "options": {"resume": resume}
-        params = {"item": {"episodeid": episode_id}, "options": {"resume": resume}}
-        resp = self._req("Player.Open", params=params)
-        if not resp.is_valid("OK"):
-            raise APIError(f"Invalid response while starting episode. Error: {resp.error}")
-
     def set_episode_watched_state(self, episode: EpisodeDetails, new_ep_id: int) -> None:
         """Set Episode Watched State"""
         self.log.debug("Setting watched state %s on %s", episode.watched_state, episode)
@@ -435,7 +427,7 @@ class KodiRPC:
     def get_all_episodes(self) -> list[EpisodeDetails]:
         """Get all episodes in library, waits upto a minuet for response"""
         self.log.debug("Getting all episodes")
-        params = {"properties": self.EP_PROPERTIES}
+        params = {"properties": EP_PROPERTIES}
         resp = self._req("VideoLibrary.GetEpisodes", params=params, timeout=60)
 
         if not resp.is_valid("episodes"):
@@ -449,7 +441,7 @@ class KodiRPC:
         file_name = self._get_filename_from_path(mapped_path)
         file_dir = self._get_dirname_from_path(mapped_path)
         params = {
-            "properties": self.EP_PROPERTIES,
+            "properties": EP_PROPERTIES,
             "filter": {
                 "and": [
                     {"operator": "startswith", "field": "path", "value": file_dir},
@@ -470,7 +462,7 @@ class KodiRPC:
         """Get all episodes given a directory"""
         mapped_path = self._map_path(series_dir)
         params = {
-            "properties": self.EP_PROPERTIES,
+            "properties": EP_PROPERTIES,
             "filter": {"operator": "startswith", "field": "path", "value": mapped_path},
         }
 
@@ -484,7 +476,7 @@ class KodiRPC:
 
     def get_episode_from_id(self, episode_id: int) -> EpisodeDetails:
         """Get details of a specific episode"""
-        params = {"episodeid": episode_id, "properties": self.EP_PROPERTIES}
+        params = {"episodeid": episode_id, "properties": EP_PROPERTIES}
         self.log.debug("Getting episode details with episode id %s", episode_id)
         resp = self._req("VideoLibrary.GetEpisodeDetails", params=params)
 
@@ -528,7 +520,7 @@ class KodiRPC:
         """Get list of shows within a directory"""
         mapped_path = self._map_path(directory)
         params = {
-            "properties": self.SHOW_PROPERTIES,
+            "properties": SHOW_PROPERTIES,
             "filter": {"operator": "startswith", "field": "path", "value": mapped_path},
         }
 
@@ -542,7 +534,7 @@ class KodiRPC:
 
     def get_show_from_id(self, show_id: int) -> ShowDetails:
         """Get details of a specific TV Show"""
-        params = {"tvshowid": show_id, "properties": self.SHOW_PROPERTIES}
+        params = {"tvshowid": show_id, "properties": SHOW_PROPERTIES}
         self.log.debug("Getting show details with tvshowid %s", show_id)
         resp = self._req("VideoLibrary.GetTVShowDetails", params=params)
 

@@ -7,6 +7,19 @@ from datetime import datetime
 
 
 DT_FORMAT = "%Y-%m-%d %H:%M:%S"
+EP_PROPERTIES = [
+    "lastplayed",
+    "playcount",
+    "file",
+    "season",
+    "episode",
+    "tvshowid",
+    "showtitle",
+    "dateadded",
+    "title",
+    "resume",
+]
+SHOW_PROPERTIES = ["title", "file", "year"]
 
 
 class Platform(Enum):
