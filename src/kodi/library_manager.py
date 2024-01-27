@@ -76,7 +76,7 @@ class LibraryManager:
     def start_playback(self, episode: EpisodeDetails) -> None:
         """Resume playback of a previously stopped episode"""
         for host in self.hosts:
-            host.play_episode(episode, resume=True)
+            host.start_episode(episode, resume=True)
 
     # -------------- Library Scanning --------------
     def scan_directory(self, show_dir: str, skip_active: bool = False) -> list[EpisodeDetails]:
