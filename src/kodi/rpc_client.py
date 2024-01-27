@@ -46,7 +46,7 @@ class KodiRPC:
         self.library_scanned = False
         self.platform: Platform = None
         self.stopped_episode: EpisodeDetails = None
-        self.stopped_episode_position: int = None
+        self.stopped_episode_position: float = None
 
     @property
     def is_alive(self) -> bool:
@@ -189,7 +189,7 @@ class KodiRPC:
 
     def _get_player_item(self, player_id: int) -> PlayerItem | None:
         """Get items a given player is playing"""
-        params = {"playerid": player_id, "properties": ["position"]}
+        params = {"playerid": player_id, "properties": ["percentage"]}
         resp = self._req("Player.GetItem", params=params)
         if not resp.is_valid("item"):
             return None
