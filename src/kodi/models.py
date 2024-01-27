@@ -109,6 +109,7 @@ class PlayerItem:
     item_id: int
     label: str
     type: str
+    position: int
 
 
 @dataclass

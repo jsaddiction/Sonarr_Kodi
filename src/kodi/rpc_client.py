@@ -46,6 +46,7 @@ class KodiRPC:
         self.library_scanned = False
         self.platform: Platform = None
         self.stopped_episode: EpisodeDetails = None
+        self.stopped_episode_position: int = None
 
     @property
     def is_alive(self) -> bool:
@@ -188,7 +189,7 @@ class KodiRPC:
 
     def _get_player_item(self, player_id: int) -> PlayerItem | None:
         """Get items a given player is playing"""
-        params = {"playerid": player_id}
+        params = {"playerid": player_id, "properties": ["position"]}
         resp = self._req("Player.GetItem", params=params)
         if not resp.is_valid("item"):
             return None
@@ -198,6 +199,7 @@ class KodiRPC:
             item_id=data["id"],
             label=data["label"],
             type=data["type"],
+            position=data["position"],
         )
 
     def _stop_player(self, player_id: int) -> None:
@@ -221,6 +223,21 @@ class KodiRPC:
 
             if elapsed.total_seconds() >= max_time_sec:
                 raise ScanTimeout(f"Scan timed out after {elapsed}")
+
+    def _set_resume_state(self, resume: ResumeState, episode_id: int) -> None:
+        """Set episode resume state"""
+        self.log.debug("Setting resume point %s on episode %s", resume, episode_id)
+        params = {
+            "episodeid": episode_id,
+            "resume": {
+                "position": resume.position,
+                "total": resume.total,
+            },
+        }
+        resp = self._req("VideoLibrary.SetEpisodeDetails", params=params)
+
+        if not resp.is_valid("OK"):
+            raise APIError(f"Invalid response while setting resume point. Error: {resp.error}")
 
     def _req(self, method: str, params: dict = None, timeout: int = None) -> KodiResponse | None:
         """Send request to this Kodi Host"""
@@ -346,6 +363,7 @@ class KodiRPC:
                 # Get episode details containing new resume point
                 try:
                     self.stopped_episode = self.get_episode_from_id(item.item_id)
+                    self.stopped_episode_position = item.position
                 except APIError as e:
                     self.log.warning(e)
                     return False
@@ -354,7 +372,7 @@ class KodiRPC:
 
         return False
 
-    def start_episode(self, episode: EpisodeDetails, resume: bool = True) -> None:
+    def start_episode(self, episode: EpisodeDetails) -> None:
         """Play a given episode"""
         # Skip if we don't have a record of a previously stopped episode
         if not self.stopped_episode:
@@ -364,17 +382,15 @@ class KodiRPC:
         if not episode == self.stopped_episode:
             return
 
-        # Apply resume point previously recorded
-        self.set_episode_watched_state(self.stopped_episode, episode.episode_id)
-
         self.log.info("Restarting Episode %s", episode)
 
-        params = {"item": {"episodeid": episode.episode_id}, "options": {"resume": resume}}
+        params = {"item": {"episodeid": episode.episode_id}, "options": {"resume": self.stopped_episode_position}}
         resp = self._req("Player.Open", params=params)
         if not resp.is_valid("OK"):
             self.log.warning("Invalid response while starting episode. Error: %s", resp.error)
             return
         self.stopped_episode = None
+        self.stopped_episode_position = None
 
     # --------------- Library Methods ----------------
     def scan_series_dir(self, directory: str) -> None:
@@ -446,8 +462,6 @@ class KodiRPC:
             },
         }
         resp = self._req("VideoLibrary.SetEpisodeDetails", params=params)
-
-        print(resp)
 
         if not resp.is_valid("OK"):
             raise APIError("Invalid response while setting watched state.")
