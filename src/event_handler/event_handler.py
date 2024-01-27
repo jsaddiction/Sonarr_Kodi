@@ -129,18 +129,20 @@ class EventHandler:
                 self.log.warning("NFO Files never created")
                 return
 
-        # get data from library for replaced files
-        old_episodes = []
+        # Store library data for replaced episodes and remove those entries
+        removed_episodes = []
         for path in self.env.deleted_paths:
-            old_episodes.extend(self.kodi.get_episodes_by_file(path))
+            old_eps = self.kodi.get_episodes_by_file(path)
+            for ep in old_eps:
+                # Stop player
+                self.kodi.stop_playback(ep, reason="Upgrade in progress. Please wait...")
 
-        if len(old_episodes) == 0:
+                # Remove episode from library
+                if self.kodi.remove_episode(ep):
+                    removed_episodes.append(ep)
+
+        if not removed_episodes:
             self.log.warning("Failed to get old episode data. Unable to persist watched states.")
-            removed_episodes = []
-        else:
-            # remove episodes
-            self.log.info("Removing %s old episodes", len(old_episodes))
-            removed_episodes = self.kodi.remove_episodes(list(old_episodes))
 
         # scan show directory
         new_episodes = self.kodi.scan_directory(self.env.series_path, skip_active=self.cfg.library.skip_active)
@@ -153,16 +155,15 @@ class EventHandler:
         if self.cfg.library.clean_after_update:
             self.kodi.clean_library()
 
-        # Fail if no episodes were scanned
-        if not new_episodes:
-            self.log.warning("No new episodes were found. Exiting")
-            return
-
         # reapply metadata from old library entries
         self.kodi.copy_ep_metadata(removed_episodes, new_episodes)
 
         # update remaining guis
         self.kodi.update_guis()
+
+        # Restart playback of previously stopped episode
+        for ep in new_episodes:
+            self.kodi.start_playback(ep)
 
         # Skip notifications if disabled
         if not self.cfg.notifications.on_download_upgrade:
@@ -187,19 +188,24 @@ class EventHandler:
                 self.log.warning("NFO Files never created")
                 return
 
-        # Get current data from library
-        old_episodes = []
+        # Store library data for replaced episodes and remove those entries
+        removed_episodes = []
         for path in self.env.episode_file_previous_paths:
-            old_episodes.extend(self.kodi.get_episodes_by_file(path))
+            old_eps = self.kodi.get_episodes_by_file(path)
+            for ep in old_eps:
+                # Stop Player
+                self.kodi.stop_playback(ep, reason="")
 
-        if not old_episodes:
+                # Remove episode from library
+                if self.kodi.remove_episode(ep):
+                    removed_episodes.append(ep)
+
+        if not removed_episodes:
             self.log.warning("Failed to get old episode data. Unable to persist watched states.")
-
-        # Remove old episodes
-        removed_episodes = self.kodi.remove_episodes(old_episodes)
 
         # Scan for new episodes
         new_episodes = self.kodi.scan_directory(self.env.series_path, skip_active=self.cfg.library.skip_active)
+
         # Fall back to full library scan
         if not new_episodes and self.cfg.library.full_scan_fallback:
             new_episodes = self.kodi.scan_video_library(skip_active=self.cfg.library.skip_active)
@@ -213,6 +219,10 @@ class EventHandler:
 
         # Update GUIs
         self.kodi.update_guis()
+
+        # Restart playback of previously stopped episode
+        for ep in new_episodes:
+            self.kodi.start_playback(ep)
 
         # Skip notifications if disabled
         if not self.cfg.notifications.on_rename:
@@ -233,11 +243,18 @@ class EventHandler:
             self.log.info("Ignoring this delete. It's part of an upgrade.")
             return
 
-        # Get current data from library
-        old_episodes = self.kodi.get_episodes_by_file(self.env.episode_file_path)
+        # Store library data for removed episodes and remove those entries
+        removed_episodes = []
+        for old_ep in self.kodi.get_episodes_by_file(self.env.episode_file_path):
+            # Stop Player
+            self.kodi.stop_playback(old_ep, reason="")
 
-        # Remove episodes from library
-        removed_episodes = self.kodi.remove_episodes(old_episodes)
+            # Remove episode from library
+            if self.kodi.remove_episode(old_ep):
+                removed_episodes.append(old_ep)
+
+        if not removed_episodes:
+            self.log.warning("Failed to get old episode data.")
 
         # Optionally, Clean Library
         if self.cfg.library.clean_after_update:

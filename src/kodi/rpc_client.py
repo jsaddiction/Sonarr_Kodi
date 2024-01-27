@@ -45,6 +45,7 @@ class KodiRPC:
         self.path_maps = cfg.path_maps
         self.library_scanned = False
         self.platform: Platform = None
+        self.stopped_episode: EpisodeDetails = None
 
     @property
     def is_alive(self) -> bool:
@@ -321,32 +322,59 @@ class KodiRPC:
 
     # --------------- Player Methods -----------------
     def stop_episode(self, episode: EpisodeDetails) -> bool:
-        """Stops a player if currently playing an episode, return True if was playing"""
+        """Stops a player if currently playing an episode, return True if item was stopped"""
         for player in self._get_active_players():
             if player.type.lower() != "video":
                 continue
 
-            # Get the item playing
+            # Get the item playing, skip if not found or not an episode
             item = self._get_player_item(player.player_id)
             if not item or item.type != "episode":
                 continue
 
+            # Confirm that the episode is the item being played
             if item.item_id == episode.episode_id:
-                self.log.info("Stopping playback of %s", episode)
+                self.log.info("Stopping episode %s", episode)
+
+                # Stop episode playback
                 try:
                     self._stop_player(player.player_id)
                 except APIError as e:
                     self.log.warning(e)
+                    return False
+
+                # Get episode details containing new resume point
+                try:
+                    self.stopped_episode = self.get_episode_from_id(item.item_id)
+                except APIError as e:
+                    self.log.warning(e)
+                    return False
+
                 return True
+
         return False
 
-    def play_episode(self, episode_id: int, resume: bool = True) -> None:
+    def start_episode(self, episode: EpisodeDetails, resume: bool = True) -> None:
         """Play a given episode"""
-        # "Player.Open", {"item": {"episodeid": ep_id}, "options": {"resume": resume}
-        params = {"item": {"episodeid": episode_id}, "options": {"resume": resume}}
+        # Skip if we don't have a record of a previously stopped episode
+        if not self.stopped_episode:
+            return
+
+        # Skip if the supplied episode wasn't previously stopped
+        if not episode == self.stopped_episode:
+            return
+
+        # Apply resume point previously recorded
+        self.set_episode_watched_state(self.stopped_episode, episode.episode_id)
+
+        self.log.info("Restarting Episode %s", episode)
+
+        params = {"item": {"episodeid": episode.episode_id}, "options": {"resume": resume}}
         resp = self._req("Player.Open", params=params)
         if not resp.is_valid("OK"):
-            raise APIError(f"Invalid response while starting episode. Error: {resp.error}")
+            self.log.warning("Invalid response while starting episode. Error: %s", resp.error)
+            return
+        self.stopped_episode = None
 
     # --------------- Library Methods ----------------
     def scan_series_dir(self, directory: str) -> None:

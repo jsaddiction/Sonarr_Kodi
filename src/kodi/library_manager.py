@@ -52,7 +52,7 @@ class LibraryManager:
         """list of hosts not currently playing"""
         return [x for x in self.hosts if not x.is_playing]
 
-    # -------------- GUI Methods --------------
+    # -------------- GUI Methods -------------------
     def update_guis(self) -> None:
         """Update GUI for all hosts not scanned"""
         for host in self.hosts_not_scanned:
@@ -64,6 +64,19 @@ class LibraryManager:
 
         for host in self.hosts:
             host.notify(notification)
+
+    # -------------- Player Methods ----------------
+    def stop_playback(self, episode: EpisodeDetails, reason: str) -> None:
+        """Stop playback of an episode on any host"""
+        title = "Sonarr - Stopped Playback"
+        for host in self.hosts:
+            if host.stop_episode(episode):
+                host.notify(Notification(title=title, msg=reason))
+
+    def start_playback(self, episode: EpisodeDetails) -> None:
+        """Resume playback of a previously stopped episode"""
+        for host in self.hosts:
+            host.play_episode(episode, resume=True)
 
     # -------------- Library Scanning --------------
     def scan_directory(self, show_dir: str, skip_active: bool = False) -> list[EpisodeDetails]:
@@ -135,7 +148,15 @@ class LibraryManager:
         # Get episodes after scan
         episodes_after_scan = self.get_all_episodes()
 
-        return [x for x in episodes_after_scan if x not in episodes_before_scan]
+        # Calculate added episodes after scan
+        new_episodes = [x for x in episodes_after_scan if x not in episodes_before_scan]
+
+        # Restart any episodes that were playing
+        for episode in new_episodes:
+            for host in [x for x in self.hosts if x.stop_episode]:
+                host.play_episode(episode)
+
+        return new_episodes
 
     def clean_library(self, skip_active: bool = False) -> None:
         """Clean Library and wait for completion"""
@@ -238,27 +259,25 @@ class LibraryManager:
 
         return []
 
-    def remove_episodes(self, episodes: list[EpisodeDetails]) -> list[EpisodeDetails] | None:
-        """Remove episode from library"""
-        removed_episodes = set()
+    def remove_episode(self, episode: EpisodeDetails) -> bool:
+        """Remove episode from library, return true if success"""
+        self.log.info("Removing episode %s", episode)
         for host in self.hosts:
-            for ep in [x for x in episodes if x not in removed_episodes]:
-                self.log.info("Removing episode %s", ep)
-                try:
-                    host.remove_episode(ep.episode_id)
-                    removed_episodes.add(ep)
-                except APIError:
-                    self.log.warning("%s Failed to remove %s", host.name, ep)
-                    continue
+            try:
+                host.remove_episode(episode.episode_id)
+            except APIError:
+                self.log.warning("%s Failed to remove %s", host.name, episode)
+                continue
+            return True
 
-            # If all episodes were removed break out of hosts loop
-            if len(removed_episodes) == len(episodes):
-                break
-
-        return list(removed_episodes)
+        return False
 
     def copy_ep_metadata(self, old_eps: list[EpisodeDetails], new_eps: list[EpisodeDetails]) -> list[EpisodeDetails]:
         """Copy watched states and date added from old episodes to their matching new entires"""
+        # Return if both lists are empty
+        if not old_eps or not new_eps:
+            return []
+
         edited_episodes = set()
         for host in self.hosts:
             for old_ep in old_eps:
