@@ -189,9 +189,10 @@ class KodiRPC:
 
     def _get_player_item(self, player_id: int) -> PlayerItem | None:
         """Get items a given player is playing"""
-        params = {"playerid": player_id, "properties": ["percentage"]}
+        params = {"playerid": player_id}
         resp = self._req("Player.GetItem", params=params)
         if not resp.is_valid("item"):
+            self.log.warning("Failed to get player item. Error: %s", resp.error)
             return None
 
         data = resp.result["item"]
@@ -199,8 +200,16 @@ class KodiRPC:
             item_id=data["id"],
             label=data["label"],
             type=data["type"],
-            position=data["position"],
         )
+
+    def _get_player_position(self, player_id: int) -> float:
+        """Get current position of an active player"""
+        params = {"playerid": player_id, "properties": ["percentage"]}
+        resp = self._req("Player.GetProperties", params=params)
+        if not resp.is_valid("percentage"):
+            self.log.warning("Failed to get player position. Error: %s", resp.error)
+            return 0.0
+        return resp.result["percentage"]
 
     def _stop_player(self, player_id: int) -> None:
         """Stops an active player"""
@@ -284,7 +293,7 @@ class KodiRPC:
         KodiRPC.REQ_ID += 1
 
         error_data = response.get("error")
-        error = KodiResponseError(**error_data) if error_data else None
+        error = KodiResponseError(code=error_data["code"], message=error_data["message"]) if error_data else None
 
         return KodiResponse(
             req_id=response.get("id"),
@@ -363,7 +372,7 @@ class KodiRPC:
                 # Get episode details containing new resume point
                 try:
                     self.stopped_episode = self.get_episode_from_id(item.item_id)
-                    self.stopped_episode_position = item.position
+                    self.stopped_episode_position = self._get_player_position(player.player_id)
                 except APIError as e:
                     self.log.warning(e)
                     return False
