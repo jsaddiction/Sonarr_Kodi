@@ -55,9 +55,19 @@ class KodiResponseError:
 
     code: int = field(default=None)
     message: str = field(default=None)
+    method: str = field(default=None)
+    stack_name: str = field(default=None)
+    stack_type: str = field(default=None)
+    stack_message: str = field(default=None)
+    stack_property_message: str = field(default=None)
+    stack_property_type: str = field(default=None)
     timed_out: bool = field(default=False)
     http_error: str | None = field(default=None)
     connection_error: str | None = field(default=None)
+
+    def __str__(self) -> str:
+        """Print the error"""
+        return f"{self.method} {self.stack_message}, {self.stack_property_message}, {self.stack_name} CODE: {self.code}"
 
 
 @dataclass

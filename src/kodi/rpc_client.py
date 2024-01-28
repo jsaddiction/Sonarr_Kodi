@@ -104,6 +104,25 @@ class KodiRPC:
             return 0.0
 
     @staticmethod
+    def _parse_response_error(error: dict) -> KodiResponseError | None:
+        """Parse error data into dataclass"""
+        if not error:
+            return None
+        error_data = error.get("data")
+        stack_data = error_data.get("stack")
+        stack_data_property = stack_data.get("property")
+        return KodiResponseError(
+            code=error.get("code"),
+            message=error.get("message"),
+            method=error_data.get("method"),
+            stack_message=stack_data.get("message"),
+            stack_name=stack_data.get("name"),
+            stack_type=stack_data.get("type"),
+            stack_property_message=stack_data_property.get("message"),
+            stack_property_type=stack_data_property.get("type"),
+        )
+
+    @staticmethod
     def _parse_show_details(shows: list[dict]) -> list[ShowDetails]:
         show_details_lst = []
         for show in shows:
@@ -207,8 +226,8 @@ class KodiRPC:
         params = {"playerid": player_id, "properties": ["percentage"]}
         resp = self._req("Player.GetProperties", params=params)
         if not resp.is_valid("percentage"):
-            self.log.warning("Failed to get player position. Error: %s", resp.error)
-            return 0.0
+            raise APIError(f"Failed to get player position. Error: {resp.error}")
+
         return resp.result["percentage"]
 
     def _stop_player(self, player_id: int) -> None:
@@ -292,14 +311,11 @@ class KodiRPC:
 
         KodiRPC.REQ_ID += 1
 
-        error_data = response.get("error")
-        error = KodiResponseError(code=error_data["code"], message=error_data["message"]) if error_data else None
-
         return KodiResponse(
             req_id=response.get("id"),
             jsonrpc=response.get("jsonrpc"),
             result=response.get("result"),
-            error=error,
+            error=self._parse_response_error(response.get("error")),
         )
 
     # --------------- System Methods -----------------
@@ -361,18 +377,10 @@ class KodiRPC:
             # Confirm that the episode is the item being played
             if item.item_id == episode.episode_id:
                 self.log.info("Stopping episode %s", episode)
-
-                # Stop episode playback
                 try:
-                    self._stop_player(player.player_id)
-                except APIError as e:
-                    self.log.warning(e)
-                    return False
-
-                # Get episode details containing new resume point
-                try:
-                    self.stopped_episode = self.get_episode_from_id(item.item_id)
                     self.stopped_episode_position = self._get_player_position(player.player_id)
+                    self.stopped_episode = self.get_episode_from_id(item.item_id)
+                    self._stop_player(player.player_id)
                 except APIError as e:
                     self.log.warning(e)
                     return False
@@ -552,7 +560,6 @@ class KodiRPC:
         self.library_scanned = True
 
     # ------------------ Show Methods ------------------
-
     def remove_tvshow(self, show_id: int) -> ShowDetails:
         """Remove a TV Show from library and return it's details"""
         show_details = self.get_show_from_id(show_id)
