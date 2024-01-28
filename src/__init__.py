@@ -25,48 +25,46 @@ def _get_log_path() -> str:
     return str(Path(file_path, file_name))
 
 
-DEFAULT_LOG_CONFIG = {
-    "version": 1,
-    "disable_existing_loggers": True,
-    "formatters": {
-        "file": {
-            "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        },
-        "console": {
-            "format": "%(name)s - %(levelname)s - %(message)s",
-        },
-    },
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-            "level": "WARNING",
-            "formatter": "console",
-            "stream": "ext://sys.stderr",
-        },
-        "file": {
-            "class": "logging.handlers.RotatingFileHandler",
-            "level": "INFO",
-            "formatter": "file",
-            "filename": _get_log_path(),
-            "maxBytes": 1_000_000,
-            "backupCount": 5,
-        },
-    },
-    "loggers": {
-        "root": {
-            "handlers": ["console", "file"],
-            "level": "DEBUG",
-        }
-    },
-}
-
-logging.config.dictConfig(DEFAULT_LOG_CONFIG)
-
-
 def config_log(log_cfg: LogCfg) -> None:
     """Configure logging"""
-    logger = logging.root
-    for handler in logger.handlers:
-        if handler.get_name() == "file":
-            handler.setLevel(log_cfg.level)
-            logger.removeHandler(handler)
+    print(log_cfg.level)
+    file_handler = {
+        "class": "logging.handlers.RotatingFileHandler",
+        "level": log_cfg.level,
+        "formatter": "file",
+        "filename": _get_log_path(),
+        "maxBytes": 1_000_000,
+        "backupCount": 5,
+    }
+    default_config = {
+        "version": 1,
+        "disable_existing_loggers": True,
+        "formatters": {
+            "file": {
+                "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            },
+            "console": {
+                "format": "%(name)s - %(levelname)s - %(message)s",
+            },
+        },
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "level": "WARNING",
+                "formatter": "console",
+                "stream": "ext://sys.stdout",
+            },
+        },
+        "loggers": {
+            "root": {
+                "handlers": ["console"],
+                "level": "DEBUG",
+            }
+        },
+    }
+
+    if log_cfg.write_file:
+        default_config["handlers"]["file"] = file_handler
+        default_config["loggers"]["root"]["handlers"].append("file")
+
+    logging.config.dictConfig(default_config)
