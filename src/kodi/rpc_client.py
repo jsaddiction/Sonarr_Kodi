@@ -525,7 +525,7 @@ class KodiRPC:
             "filter": {"operator": "startswith", "field": "path", "value": mapped_path},
         }
 
-        self.log.debug("Getting all episodes in %s using mapped path %s", series_dir, mapped_path)
+        self.log.debug("Getting all episodes in %s", mapped_path)
         resp = self._req("VideoLibrary.GetEpisodes", params=params)
 
         if not resp.is_valid("episodes"):
