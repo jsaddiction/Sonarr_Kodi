@@ -3,7 +3,6 @@
 """Sonarr Kodi Main Interface"""
 import logging
 import sys
-from os import environ
 from pathlib import Path
 from src import config_log
 from src.config import ConfigParser
@@ -27,13 +26,6 @@ def main() -> None:
     log.info("Starting...")
     kodi = LibraryManager(cfg.hosts, cfg.library.path_mapping)
     event_handler = EventHandler(ENV, cfg, kodi)
-
-    log.debug("=========Parsed Environment========")
-    for k, v in environ.items():
-        if "sonarr" not in k.lower():
-            continue
-        log.debug("%s=%s", k, v)
-    log.debug("=========Parsed Environment========")
 
     if len(kodi.hosts) == 0:
         log.critical("Unable to modify library. No active Kodi Hosts.")
@@ -66,7 +58,7 @@ def main() -> None:
         case Events.ON_TEST:
             event_handler.test()
         case _:
-            log.critical("Event type was unknown or could not be parsed :: %s", ENV.event_type)
+            log.critical("Event type was unknown or could not be parsed. Exiting")
             sys.exit(1)
 
     log.info("Processing Complete")

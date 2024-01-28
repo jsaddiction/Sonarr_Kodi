@@ -6,7 +6,7 @@ from dataclasses import asdict
 from .rpc_client import KodiRPC
 from .config import HostConfig, PathMapping
 from .exceptions import APIError, ScanTimeout
-from .models import EpisodeDetails, ShowDetails, Source, Notification
+from .models import EpisodeDetails, ShowDetails, Notification
 
 
 class LibraryManager:
@@ -56,7 +56,6 @@ class LibraryManager:
     def update_guis(self) -> None:
         """Update GUI for all hosts not scanned"""
         for host in self.hosts_not_scanned:
-            self.log.info("Updating GUI on %s", host.name)
             host.update_gui()
 
     def notify(self, notification: Notification) -> None:
@@ -108,6 +107,9 @@ class LibraryManager:
                     self.log.warning("Failed to scan. Skipping this host. Error: %s", e)
                     continue
 
+            # Wait 5 seconds before trying all hosts again
+            sleep(5)
+
         # Get current episodes (after scan)
         episodes_after_scan = self.get_episodes_by_dir(show_dir)
 
@@ -120,14 +122,7 @@ class LibraryManager:
         # Get episodes before scan
         episodes_before_scan = self.get_all_episodes()
 
-        # Optionally, wait for inactive players
-        if skip_active and len(self.hosts_not_playing) == 0:
-            self.log.info("Full scan paused while waiting for an inactive player")
-            while len(self.hosts_not_playing) == 0:
-                sleep(1)
-
         # Scan Video library
-        self.log.info("Performing full library scan")
         scanned = False
         while not scanned:
             for host in self.hosts:
@@ -145,6 +140,9 @@ class LibraryManager:
                     self.log.warning("Failed to scan. Skipping this host. Error: %s", e)
                     continue
 
+            # Wait 5 seconds before trying all hosts again
+            sleep(5)
+
         # Get episodes after scan
         episodes_after_scan = self.get_all_episodes()
 
@@ -158,70 +156,29 @@ class LibraryManager:
 
         return new_episodes
 
-    def clean_library(self, skip_active: bool = False) -> None:
+    def clean_library(self, skip_active: bool = False, series_dir: str = None) -> None:
         """Clean Library and wait for completion"""
-        # Optionally, wait for inactive players
-        if skip_active and len(self.hosts_not_playing) == 0:
-            self.log.info("Library cleaning paused while waiting for an inactive player")
-            while len(self.hosts_not_playing) == 0:
-                sleep(1)
 
         # Clean library
-        self.log.info("Cleaning Library")
-        for host in self.hosts:
-            if skip_active and host.is_playing:
-                self.log.info("Skipping active player %s", host.name)
-                continue
-            try:
-                host.clean_video_library()
-            except APIError:
-                continue
-
-            break
-
-    # This may go away, only scan tvshow sources
-    def scan_source_directories(self) -> list[EpisodeDetails] | None:
-        """Scan all sources containing tv shows. This is expensive as all episodes
-        are parsed from kodi within all sources.
-
-        Returns:
-            None: if no sources were found containing TV Shows
-            Empty List: if no new episodes were found
-            list[EpisodeDetails]: If new episodes were found
-        """
-        episodes_before_scan: list[EpisodeDetails] = []
-        episodes_after_scan: list[EpisodeDetails] = []
-        sources = self.get_show_sources()
-
-        # Check for sources
-        if not sources:
-            self.log.warning("No Kodi sources containing TV Shows were found.")
-            return None
-
-        # Get all episodes before scan
-        for source in sources:
-            episodes_before_scan.extend(self.get_episodes_by_dir(source.file))
-
-        self.log.info("Scanning all sources containing episodes")
-        for host in self.hosts:
-            all_sources_scanned = False
-            for source in sources:
-                try:
-                    host.scan_series_dir(source.file)
-                    all_sources_scanned = True
-                except APIError:
-                    self.log.warning("Failed to scan %s", source.file)
-                    all_sources_scanned = False
+        cleaned = False
+        while not cleaned:
+            for host in self.hosts:
+                # Optionally, skip active hosts
+                if skip_active and host.is_playing:
+                    self.log.info("Skipping active player %s", host.name)
                     continue
 
-            if all_sources_scanned:
-                break
+                # Clean video library
+                try:
+                    host.clean_video_library(series_dir)
+                    cleaned = True
+                    break
+                except APIError as e:
+                    self.log.warning(e)
+                    continue
 
-        # Get all episodes after scan
-        for source in sources:
-            episodes_after_scan.extend(self.get_episodes_by_dir(source.file))
-
-        return [x for x in episodes_after_scan if x not in episodes_before_scan]
+            # Wait 5 seconds before trying all hosts again
+            sleep(5)
 
     # -------------- Episode Methods --------------
     def get_all_episodes(self) -> list[EpisodeDetails]:
@@ -283,7 +240,7 @@ class LibraryManager:
             for old_ep in old_eps:
                 for new_ep in new_eps:
                     if old_ep == new_ep:
-                        self.log.info("Copying episode metadata to new episode : %s", new_ep)
+                        self.log.info("Applying %s to new episode : %s", old_ep.watched_state, new_ep)
                         try:
                             host.set_episode_watched_state(old_ep, new_ep.episode_id)
                             edited_episodes.add(host.get_episode_from_id(new_ep.episode_id))
@@ -330,27 +287,10 @@ class LibraryManager:
 
     def show_exists(self, series_path: str) -> list[ShowDetails]:
         """Check if a show exists, return list of shows with series_path"""
+        self.log.debug("Checking for existing show in %s", series_path)
         for host in self.hosts:
             try:
                 return host.get_shows_from_dir(series_path)
             except APIError:
                 continue
         return False
-
-    # This may go away, used by scan_source_directory
-    def get_show_sources(self) -> list[Source] | None:
-        """Get all TV Show sources from Kodi"""
-        all_sources: list[Source] = []
-        self.log.info("Getting show sources")
-        for host in self.hosts:
-            try:
-                all_sources = host.get_show_sources()
-            except APIError:
-                self.log.warning("Failed to get sources from Kodi")
-                continue
-
-        if not all_sources:
-            self.log.warning("Failed to get any sources from Kodi")
-            return None
-
-        return [x for x in all_sources if self.get_episodes_by_dir(x.file)]

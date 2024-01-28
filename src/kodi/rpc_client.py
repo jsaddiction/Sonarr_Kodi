@@ -334,20 +334,16 @@ class KodiRPC:
     # --------------- UI Methods ---------------------
     def update_gui(self) -> None:
         """Update GUI|Widgets by scanning a non existent path"""
-        if self.library_scanned:
-            self.log.info("Library Scanned. GUI update not required, Skipping.")
-            return
-
         params = {"directory": "/does_not_exist/", "showdialogs": False}
-        self.log.debug("Updating GUI")
+        self.log.info("Updating GUI")
         resp = self._req("VideoLibrary.Scan", params=params)
         if not resp.is_valid("OK"):
-            self.log.info("Failed to update GUI.")
+            self.log.warning("Failed to update GUI. ERROR: %s", resp.error)
 
     def notify(self, notification: Notification) -> None:
         """Send GUI Notification to Kodi Host"""
         if self.disable_notifications:
-            self.log.debug("Notifications disabled. Skipping")
+            self.log.debug("All Host GUI Notifications disabled. Skipping.")
             return
 
         params = {
@@ -359,7 +355,7 @@ class KodiRPC:
         self.log.info("Sending GUI Notification :: %s", notification)
         resp = self._req("GUI.ShowNotification", params=params)
         if not resp.is_valid("OK"):
-            self.log.warning("Failed to send notification")
+            self.log.warning("Failed to send notification ERROR: %s", resp.error)
             return
 
     # --------------- Player Methods -----------------
@@ -431,23 +427,27 @@ class KodiRPC:
     def full_video_scan(self) -> None:
         """Perform full video library scan"""
         params = {"showdialogs": False}
-        self.log.debug("Performing full video library scan")
+        self.log.info("Performing full library scan")
         resp = self._req("VideoLibrary.Scan", params=params)
         if not resp.is_valid("OK"):
-            raise APIError(f"Invalid response when attempting full scan. Error: Error: {resp.error}")
+            raise APIError(f"Invalid response when attempting full scan. Error: {resp.error}")
         elapsed = self._wait_for_video_scan()
         self.log.info("Scan completed in %s", elapsed)
         self.library_scanned = True
 
-    def clean_video_library(self) -> None:
+    def clean_video_library(self, series_dir: str = None) -> None:
         """Clean Video Library"""
-        params = {"showdialogs": False, "content": "tvshows"}
+        params = {"showdialogs": False}
+        if series_dir:
+            params["directory"] = self._map_path(series_dir)
+        else:
+            params["content"] = "tvshows"
 
-        self.log.debug("Cleaning tvshow library")
+        self.log.info("Cleaning library. %s", params["directory"] if series_dir else params["content"])
         resp = self._req("VideoLibrary.Clean", params=params, timeout=1800)
 
         if not resp.is_valid("OK"):
-            raise APIError("Failed to clean video Library.")
+            raise APIError(f"Failed to clean video Library. ERROR: {resp.error}")
 
         # Wait for cleaning to complete
         self._wait_for_video_scan()
@@ -481,7 +481,7 @@ class KodiRPC:
         resp = self._req("VideoLibrary.SetEpisodeDetails", params=params)
 
         if not resp.is_valid("OK"):
-            raise APIError("Invalid response while setting watched state.")
+            raise APIError(f"Invalid response while setting watched state. ERROR: {resp.error}")
 
     def get_all_episodes(self) -> list[EpisodeDetails]:
         """Get all episodes in library, waits upto a minuet for response"""
@@ -509,11 +509,11 @@ class KodiRPC:
             },
         }
 
-        self.log.debug("Getting all episodes from file %s using mapped path %s", file_path, mapped_path)
+        self.log.debug("Getting all episodes from path %s", mapped_path)
         resp = self._req("VideoLibrary.GetEpisodes", params=params)
 
         if not resp.is_valid("episodes"):
-            raise APIError(f"Invalid response: {resp}")
+            raise APIError(f"Invalid response while getting episodes from file. ERROR: {resp.error}")
 
         return self._parse_ep_details(resp.result["episodes"])
 
@@ -582,7 +582,7 @@ class KodiRPC:
             "filter": {"operator": "startswith", "field": "path", "value": mapped_path},
         }
 
-        self.log.debug("Getting shows in %s using mapped path %s", directory, mapped_path)
+        self.log.debug("Getting shows in %s", mapped_path)
         resp = self._req("VideoLibrary.GetTVShows", params=params)
 
         if not resp.is_valid("tvshows"):

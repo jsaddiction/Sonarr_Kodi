@@ -27,7 +27,6 @@ def _get_log_path() -> str:
 
 def config_log(log_cfg: LogCfg) -> None:
     """Configure logging"""
-    print(log_cfg.level)
     file_handler = {
         "class": "logging.handlers.RotatingFileHandler",
         "level": log_cfg.level,

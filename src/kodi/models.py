@@ -136,6 +136,17 @@ class ResumeState:
     position: int = field(default=0)
     total: int = field(default=0)
 
+    @property
+    def percent(self) -> float:
+        """Percent complete"""
+        if self.total == 0 or self.position == 0:
+            return 0.0
+
+        return (self.total / self.position) * 100
+
+    def __str__(self) -> str:
+        return f"Resume {self.percent:02}% Complete."
+
 
 @dataclass
 class WatchedState:
@@ -169,6 +180,9 @@ class WatchedState:
             return False
 
         return bool(self.last_played) and self.play_count > 0
+
+    def __str__(self) -> str:
+        return f"Added={self.date_added} Plays={self.play_count} LastPlay={self.last_played} {self.resume}"
 
 
 @dataclass

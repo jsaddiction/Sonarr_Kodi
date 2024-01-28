@@ -40,6 +40,7 @@ class EventHandler:
 
                 # record files when they propagate
                 if file.exists():
+                    self.log.debug("Found %s", file.name)
                     files_found.add(file)
 
                 # return false if we timed out
@@ -60,7 +61,7 @@ class EventHandler:
 
         # Skip notifications if disabled
         if not self.cfg.notifications.on_grab:
-            self.log.info("Grab notifications disabled.")
+            self.log.info("Grab notifications disabled. Skipping.")
             return
 
         # Send notification for each attempted download
@@ -109,7 +110,7 @@ class EventHandler:
 
         # Skip notifications if disabled
         if not self.cfg.notifications.on_download_new:
-            self.log.info("Download New Episode notifications disabled.")
+            self.log.info("Download New Episode notifications disabled. Skipping.")
             return
 
         # Notify clients
@@ -142,14 +143,16 @@ class EventHandler:
                     removed_episodes.append(ep)
 
         if not removed_episodes:
-            self.log.warning("Failed to get old episode data. Unable to persist watched states.")
+            self.log.warning("Failed to remove old episodes. Unable to persist watched states. Cleaning Required.")
+            if not self.cfg.library.clean_after_update:
+                self.kodi.clean_library(skip_active=self.cfg.library.skip_active, series_dir=self.env.series_path)
 
         # scan show directory
         new_episodes = self.kodi.scan_directory(self.env.series_path, skip_active=self.cfg.library.skip_active)
 
         # Fall back to full library scan
         if not new_episodes and self.cfg.library.full_scan_fallback:
-            new_episodes = self.kodi.scan_video_library(skip_active=self.cfg.library.skip_active)
+            new_episodes = self.kodi.full_scan(skip_active=self.cfg.library.skip_active)
 
         # Optionally, Clean Library
         if self.cfg.library.clean_after_update:
@@ -167,7 +170,7 @@ class EventHandler:
 
         # Skip notifications if disabled
         if not self.cfg.notifications.on_download_upgrade:
-            self.log.info("Upgrade Episode notifications disabled.")
+            self.log.info("Upgrade Episode notifications disabled. Skipping.")
             return
 
         # notify clients
@@ -194,21 +197,23 @@ class EventHandler:
             old_eps = self.kodi.get_episodes_by_file(path)
             for ep in old_eps:
                 # Stop Player
-                self.kodi.stop_playback(ep, reason="")
+                self.kodi.stop_playback(ep, reason="Rename in progress. Please wait...")
 
                 # Remove episode from library
                 if self.kodi.remove_episode(ep):
                     removed_episodes.append(ep)
 
         if not removed_episodes:
-            self.log.warning("Failed to get old episode data. Unable to persist watched states.")
+            self.log.warning("Failed to remove old episodes. Unable to persist watched states. Cleaning Required.")
+            if not self.cfg.library.clean_after_update:
+                self.kodi.clean_library(skip_active=self.cfg.library.skip_active, series_dir=self.env.series_path)
 
         # Scan for new episodes
         new_episodes = self.kodi.scan_directory(self.env.series_path, skip_active=self.cfg.library.skip_active)
 
         # Fall back to full library scan
         if not new_episodes and self.cfg.library.full_scan_fallback:
-            new_episodes = self.kodi.scan_video_library(skip_active=self.cfg.library.skip_active)
+            new_episodes = self.kodi.full_scan(skip_active=self.cfg.library.skip_active)
 
         # Optionally, Clean Library
         if self.cfg.library.clean_after_update:
@@ -226,7 +231,7 @@ class EventHandler:
 
         # Skip notifications if disabled
         if not self.cfg.notifications.on_rename:
-            self.log.info("Rename Episode notifications disabled.")
+            self.log.info("Rename Episode notifications disabled. Skipping.")
             return
 
         # Notify clients
@@ -238,8 +243,7 @@ class EventHandler:
         """Remove an episode"""
         self.log.info("Delete File Event Detected")
         # Ignore delete event if upgrade is pending
-        deleted_reason = self.env.episode_file_delete_reason
-        if deleted_reason.lower() == "upgrade":
+        if self.env.episode_file_delete_reason.lower() == "upgrade":
             self.log.info("Ignoring this delete. It's part of an upgrade.")
             return
 
@@ -254,18 +258,20 @@ class EventHandler:
                 removed_episodes.append(old_ep)
 
         if not removed_episodes:
-            self.log.warning("Failed to get old episode data.")
+            self.log.warning("Failed to remove any old episodes. Cleaning Required.")
+            if not self.cfg.library.clean_after_update:
+                self.kodi.clean_library(skip_active=self.cfg.library.skip_active, series_dir=self.env.series_path)
 
         # Optionally, Clean Library
         if self.cfg.library.clean_after_update:
-            self.kodi.clean_library()
+            self.kodi.clean_library(skip_active=self.cfg.library.skip_active)
 
         # Update remaining guis
         self.kodi.update_guis()
 
         # Skip notifications if disabled
         if not self.cfg.notifications.on_delete:
-            self.log.info("Delete Episode notifications disabled.")
+            self.log.info("Delete Episode notifications disabled. Skipping.")
             return
 
         # Notify clients
@@ -279,7 +285,7 @@ class EventHandler:
 
         # Skip notifications if disabled
         if not self.cfg.notifications.on_series_add:
-            self.log.info("Series Add notifications disabled.")
+            self.log.info("Series Add notifications disabled. Skipping.")
             return
 
         # Notify clients
@@ -307,7 +313,7 @@ class EventHandler:
 
         # Skip notifications if disabled
         if not self.cfg.notifications.on_series_delete:
-            self.log.info("Series Delete notifications disabled.")
+            self.log.info("Series Delete notifications disabled. Skipping.")
             return
 
         # Notify Clients
@@ -320,7 +326,7 @@ class EventHandler:
 
         # Skip notifications if disabled
         if not self.cfg.notifications.on_health_issue:
-            self.log.info("Health Issue notifications disabled.")
+            self.log.info("Health Issue notifications disabled. Skipping.")
             return
 
         # Notify Clients
@@ -334,7 +340,7 @@ class EventHandler:
 
         # Skip notifications if disabled
         if not self.cfg.notifications.on_health_restored:
-            self.log.info("Health Restored notifications disabled.")
+            self.log.info("Health Restored notifications disabled. Skipping.")
             return
 
         # Notify Clients
@@ -348,12 +354,12 @@ class EventHandler:
 
         # Skip notifications if disabled
         if not self.cfg.notifications.on_application_update:
-            self.log.info("Application Update notifications disabled.")
+            self.log.info("Application Update notifications disabled. Skipping.")
             return
 
         # Notify Clients
         title = "Sonarr - Application Update"
-        msg = f"{self.env.update_message}"
+        msg = self.env.update_message
         self.kodi.notify(Notification(title=title, msg=msg))
 
     def manual_interaction_required(self) -> None:
@@ -362,7 +368,7 @@ class EventHandler:
 
         # Skip notifications if disabled
         if not self.cfg.notifications.on_manual_interaction_required:
-            self.log.info("Manual Interaction Required notifications disabled.")
+            self.log.info("Manual Interaction Required notifications disabled. Skipping.")
             return
 
         # Notify Clients
@@ -376,7 +382,7 @@ class EventHandler:
 
         # Skip notifications if disabled
         if not self.cfg.notifications.on_test:
-            self.log.info("Test notifications disabled.")
+            self.log.info("Test notifications disabled. Skipping.")
             return
 
         # Notify Clients

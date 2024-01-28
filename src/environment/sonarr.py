@@ -1,4 +1,5 @@
 """Sonarr Environment parser"""
+import logging
 from dataclasses import dataclass, field, fields
 from enum import Enum
 from typing import get_args, get_origin, Any
@@ -84,7 +85,14 @@ class SonarrEnvironment:
 
     def __post_init__(self) -> None:
         # Get environment variables
+        log = logging.getLogger("Environment Parser")
         env_vars = {k.lower().strip(): v for k, v in environ.items() if k.lower().startswith("sonarr")}
+
+        # Debug environment
+        log.debug("========== Parsed Environment ==========")
+        for k, v in env_vars.items():
+            log.debug("%s = %s", k, v)
+        log.debug("========== Parsed Environment ==========")
 
         # Loop through dataclass fields
         for attr in fields(self):
