@@ -21,7 +21,7 @@ class EventHandler:
         self.kodi = kodi
         self.log = logging.getLogger("EventHandler")
 
-    # ------------- New Helpers --------------------
+    # ------------- Helpers --------------------
     def _wait_for_nfos(self, nfos: list[PosixPath]) -> bool:
         """Wait for all files in nfos list to be present before proceeding"""
         delay = 1

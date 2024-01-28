@@ -123,16 +123,16 @@ class ConfigParser:
             with open(config_path, mode="r", encoding="utf8") as file:
                 cfg = yaml.safe_load(file.read())
         except FileNotFoundError as e:
-            print(f"Config file not found at '{config_path}' Error: {e}")
+            print(f"Config file not found at '{config_path}' Error: {e}", file=sys.stderr)
             sys.exit(1)
         except OSError as e:
-            print(f"Failed to read config file. Error: {e}")
+            print(f"Failed to read config file. Error: {e}", file=sys.stderr)
             sys.exit(1)
 
         try:
             self._validate_config(cfg, CONFIG_SCHEMA)
         except ConfigError as e:
-            print(f"Invalid Config file. {e}")
+            print(f"Invalid Config file. {e}", file=sys.stderr)
             sys.exit(1)
 
         return Config.from_dict(cfg)

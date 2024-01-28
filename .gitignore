@@ -9,6 +9,9 @@ settings.yaml
 # Test scripts
 test_*.*
 
+# local logs
+/logs
+
 # C extensions
 *.so
 
