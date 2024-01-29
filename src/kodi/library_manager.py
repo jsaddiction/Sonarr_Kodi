@@ -247,7 +247,8 @@ class LibraryManager:
                     continue
 
             # Wait 5 seconds before trying all hosts again
-            sleep(5)
+            if not cleaned:
+                sleep(5)
 
     # -------------- Episode Methods --------------
     def get_all_episodes(self) -> list[EpisodeDetails]:
