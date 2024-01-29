@@ -45,8 +45,6 @@ class KodiRPC:
         self.path_maps = cfg.path_maps
         self.library_scanned = False
         self.platform: Platform = None
-        self.stopped_episode: EpisodeDetails = None
-        self.stopped_episode_position: float = None
 
     @property
     def is_alive(self) -> bool:
@@ -230,12 +228,12 @@ class KodiRPC:
 
         return resp.result["percentage"]
 
-    def _stop_player(self, player_id: int) -> None:
-        """Stops an active player"""
-        params = {"playerid": player_id}
-        resp = self._req("Player.Stop", params=params)
-        if not resp.is_valid("OK"):
-            raise APIError(f"Failed to stop the active player. Error: {resp.error}")
+    # def _stop_player(self, player_id: int) -> None:
+    #     """Stops an active player"""
+    #     params = {"playerid": player_id}
+    #     resp = self._req("Player.Stop", params=params)
+    #     if not resp.is_valid("OK"):
+    #         raise APIError(f"Failed to stop the active player. Error: {resp.error}")
 
     def _wait_for_video_scan(self) -> timedelta:
         """Wait for video scan to complete"""
@@ -359,51 +357,45 @@ class KodiRPC:
             return
 
     # --------------- Player Methods -----------------
-    def stop_episode(self, episode: EpisodeDetails) -> bool:
-        """Stops a player if currently playing an episode, return True if item was stopped"""
+    def is_playing_episode(self, episode_id: int) -> int | None:
+        """If this host is playing the given episode, return the playerid"""
         for player in self._get_active_players():
             if player.type.lower() != "video":
                 continue
 
-            # Get the item playing, skip if not found or not an episode
+            # Get the item playing
             item = self._get_player_item(player.player_id)
             if not item or item.type != "episode":
                 continue
 
-            # Confirm that the episode is the item being played
-            if item.item_id == episode.episode_id:
-                self.log.info("Stopping episode %s", episode)
-                try:
-                    self.stopped_episode_position = self._get_player_position(player.player_id)
-                    self.stopped_episode = self.get_episode_from_id(item.item_id)
-                    self._stop_player(player.player_id)
-                except APIError as e:
-                    self.log.warning(e)
-                    return False
+            # Check if item is same as episode provided
+            if item.item_id == episode_id:
+                return player.player_id
 
-                return True
+        return None
 
-        return False
+    def stop_player(self, player_id: int) -> float | None:
+        """Stops a player, return position"""
+        try:
+            position = self._get_player_position(player_id)
+        except APIError as e:
+            self.log.warning(e)
+            return None
 
-    def start_episode(self, episode: EpisodeDetails) -> None:
+        params = {"playerid": player_id}
+        resp = self._req("Player.Stop", params=params)
+        if not resp.is_valid("OK"):
+            raise APIError(f"Failed to stop the active player. Error: {resp.error}")
+
+        return position
+
+    def start_episode(self, episode_id: int, position: float) -> None:
         """Play a given episode"""
-        # Skip if we don't have a record of a previously stopped episode
-        if not self.stopped_episode:
-            return
-
-        # Skip if the supplied episode wasn't previously stopped
-        if not episode == self.stopped_episode:
-            return
-
-        self.log.info("Restarting Episode %s", episode)
-
-        params = {"item": {"episodeid": episode.episode_id}, "options": {"resume": self.stopped_episode_position}}
+        self.log.info("Restarting Episode %s", episode_id)
+        params = {"item": {"episodeid": episode_id}, "options": {"resume": position}}
         resp = self._req("Player.Open", params=params)
         if not resp.is_valid("OK"):
             self.log.warning("Invalid response while starting episode. Error: %s", resp.error)
-            return
-        self.stopped_episode = None
-        self.stopped_episode_position = None
 
     # --------------- Library Methods ----------------
     def scan_series_dir(self, directory: str) -> None:

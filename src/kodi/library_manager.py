@@ -1,12 +1,14 @@
 """Kodi Host wrapper to manipulate many hosts"""
 
 import logging
+import pickle
+from pathlib import Path
 from time import sleep
 from dataclasses import asdict
 from .rpc_client import KodiRPC
 from .config import HostConfig, PathMapping
 from .exceptions import APIError, ScanTimeout
-from .models import EpisodeDetails, ShowDetails, Notification
+from .models import EpisodeDetails, StoppedEpisode, ShowDetails, Notification
 
 
 class LibraryManager:
@@ -14,6 +16,8 @@ class LibraryManager:
     These methods are deployed in a redundant way with many
     instances of kodi.
     """
+
+    PICKLE_PATH = Path("stopped_episodes.pk1").resolve()
 
     def __init__(self, host_configs: list[HostConfig], path_maps: list[PathMapping]) -> None:
         self.log = logging.getLogger("Kodi-Library-Manager")
@@ -52,6 +56,27 @@ class LibraryManager:
         """list of hosts not currently playing"""
         return [x for x in self.hosts if not x.is_playing]
 
+    # -------------- Helpers -----------------------
+    def _serialize(self, stopped_eps: list[StoppedEpisode]) -> None:
+        """Serialize and store list of stopped episodes"""
+        try:
+            with self.PICKLE_PATH.open(mode="wb") as file:
+                pickle.dump(stopped_eps, file)
+        except IOError as e:
+            self.log.warning("Failed to store stopped episodes. Error: %s", e)
+
+    def _deserialize(self) -> list[StoppedEpisode]:
+        """Deserialize previously recorded data for replaying stopped episodes"""
+        try:
+            with self.PICKLE_PATH.open(mode="rb") as file:
+                return pickle.load(file)
+        except IOError as e:
+            self.log.warning("Failed to load previously stored episode data. ERROR: %s", e)
+        finally:
+            self.PICKLE_PATH.unlink()
+
+        return []
+
     # -------------- GUI Methods -------------------
     def update_guis(self) -> None:
         """Update GUI for all hosts not scanned"""
@@ -68,14 +93,51 @@ class LibraryManager:
     def stop_playback(self, episode: EpisodeDetails, reason: str) -> None:
         """Stop playback of an episode on any host"""
         title = "Sonarr - Stopped Playback"
+        stopped_episodes: list[StoppedEpisode] = []
         for host in self.hosts:
-            if host.stop_episode(episode):
+            # Skip host if not playing the episode, otherwise collect playerid
+            player_id = host.is_playing_episode(episode.episode_id)
+            if player_id is None:
+                continue
+
+            # Stop the player and collect position
+            self.log.info("%s Stopping playback of %s", host.name, episode)
+            position = host.stop_player(player_id)
+            if position is not None:
+                stopped_episodes.append(StoppedEpisode(episode=episode, host_name=host.name, position=position))
+
+        # Return early if nothing was stopped
+        if not stopped_episodes:
+            return
+
+        # Store result of stopped
+        self._serialize(stopped_episodes)
+
+        # Pause to allow UI to load
+        sleep(3)
+
+        # Send notifications about the stopped episode to the GUI
+        for host in self.hosts:
+            for stopped_ep in stopped_episodes:
+                if host.name != stopped_ep.host_name:
+                    continue
                 host.notify(Notification(title=title, msg=reason))
 
     def start_playback(self, episode: EpisodeDetails) -> None:
         """Resume playback of a previously stopped episode"""
-        for host in self.hosts:
-            host.start_episode(episode)
+        stopped_episodes = self._deserialize()
+        for host in self.hosts_not_playing:
+            for ep in stopped_episodes:
+                # Skip wrong host
+                if ep.host_name != host.name:
+                    continue
+
+                # Skip wrong episode
+                if ep.episode.episode_id != episode.episode_id:
+                    continue
+
+                # Start playback
+                host.start_episode(episode.episode_id, ep.position)
 
     # -------------- Library Scanning --------------
     def scan_directory(self, show_dir: str, skip_active: bool = False) -> list[EpisodeDetails]:

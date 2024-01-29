@@ -135,22 +135,17 @@ class EventHandler:
         for path in self.env.deleted_paths:
             old_eps = self.kodi.get_episodes_by_file(path)
             for ep in old_eps:
-                # Stop player
-                self.kodi.stop_playback(ep, reason="Upgrade in progress. Please wait...")
-
-                # Remove episode from library
                 if self.kodi.remove_episode(ep):
                     removed_episodes.append(ep)
 
+        # Force library clean if manual removal failed
         if not removed_episodes:
             self.log.warning("Failed to remove old episodes. Unable to persist watched states. Cleaning Required.")
             if not self.cfg.library.clean_after_update:
                 self.kodi.clean_library(skip_active=self.cfg.library.skip_active, series_dir=self.env.series_path)
 
-        # scan show directory
+        # Scan show directory and fall back to full scan if configured
         new_episodes = self.kodi.scan_directory(self.env.series_path, skip_active=self.cfg.library.skip_active)
-
-        # Fall back to full library scan
         if not new_episodes and self.cfg.library.full_scan_fallback:
             new_episodes = self.kodi.full_scan(skip_active=self.cfg.library.skip_active)
 
@@ -164,7 +159,7 @@ class EventHandler:
         # update remaining guis
         self.kodi.update_guis()
 
-        # Restart playback of previously stopped episode
+        # Restart playback of previously stopped episode5
         for ep in new_episodes:
             self.kodi.start_playback(ep)
 
@@ -242,16 +237,19 @@ class EventHandler:
     def episode_delete(self) -> None:
         """Remove an episode"""
         self.log.info("Delete File Event Detected")
-        # Ignore delete event if upgrade is pending
+
+        # Upgrades only. Stop playback and store data for restart after sonarr replaces file
         if self.env.episode_file_delete_reason.lower() == "upgrade":
-            self.log.info("Ignoring this delete. It's part of an upgrade.")
+            # Stop episodes that are currently playing
+            for old_ep in self.kodi.get_episodes_by_file(self.env.episode_file_path):
+                self.kodi.stop_playback(old_ep, reason="Processing Upgrade. Please Wait...")
             return
 
         # Store library data for removed episodes and remove those entries
         removed_episodes = []
         for old_ep in self.kodi.get_episodes_by_file(self.env.episode_file_path):
             # Stop Player
-            self.kodi.stop_playback(old_ep, reason="")
+            self.kodi.stop_playback(old_ep, reason="Deleted Episode")
 
             # Remove episode from library
             if self.kodi.remove_episode(old_ep):

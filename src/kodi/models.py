@@ -142,10 +142,10 @@ class ResumeState:
         if self.total == 0 or self.position == 0:
             return 0.0
 
-        return (self.total / self.position) * 100
+        return (self.position / self.total) * 100
 
     def __str__(self) -> str:
-        return f"Resume {self.percent:02}% Complete."
+        return f"Resume {self.percent:.2f}% Complete."
 
 
 @dataclass
@@ -228,3 +228,12 @@ class EpisodeDetails:
 
     def __str__(self) -> str:
         return f"{self.show_title} - S{self.season:02}E{self.episode:02} - {self.sanitize_ep_title(self.episode_title)}"
+
+
+@dataclass(frozen=True)
+class StoppedEpisode:
+    """Episode that was playing during delete event"""
+
+    episode: EpisodeDetails
+    host_name: str
+    position: float
