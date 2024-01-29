@@ -17,7 +17,7 @@ class LibraryManager:
     instances of kodi.
     """
 
-    PICKLE_PATH = Path("stopped_episodes.pk1").resolve()
+    PICKLE_PATH = Path(__file__).with_name("stopped_episodes.pk1")
 
     def __init__(self, host_configs: list[HostConfig], path_maps: list[PathMapping]) -> None:
         self.log = logging.getLogger("Kodi-Library-Manager")
