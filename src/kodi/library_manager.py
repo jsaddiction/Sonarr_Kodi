@@ -68,6 +68,7 @@ class LibraryManager:
 
     def _deserialize(self) -> list[StoppedEpisode]:
         """Deserialize previously recorded data for replaying stopped episodes"""
+        self.log.debug("Reading stopped episodes file.")
         try:
             with self.PICKLE_PATH.open(mode="rb") as file:
                 data = pickle.load(file)
@@ -127,14 +128,18 @@ class LibraryManager:
     def start_playback(self, episode: EpisodeDetails) -> None:
         """Resume playback of a previously stopped episode"""
         stopped_episodes = self._deserialize()
-        for host in self.hosts_not_playing:
+        if stopped_episodes:
+            self.log.debug("Attempting to restart episodes %s", stopped_episodes)
+        for host in self.hosts:
             for ep in stopped_episodes:
                 # Skip wrong host
                 if ep.host_name != host.name:
+                    self.log.debug("Skipping Wrong host")
                     continue
 
                 # Skip wrong episode
                 if ep.episode.episode_id != episode.episode_id:
+                    self.log.debug("SKipping Wrong Episode")
                     continue
 
                 # Start playback
