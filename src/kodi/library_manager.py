@@ -134,12 +134,10 @@ class LibraryManager:
             for ep in stopped_episodes:
                 # Skip wrong host
                 if ep.host_name != host.name:
-                    self.log.debug("Skipping Wrong host")
                     continue
 
                 # Skip wrong episode
-                if ep.episode.episode_id != episode.episode_id:
-                    self.log.debug("SKipping Wrong Episode")
+                if ep.episode != episode:
                     continue
 
                 # Start playback
