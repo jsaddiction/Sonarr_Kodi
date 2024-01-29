@@ -175,7 +175,8 @@ class LibraryManager:
                     continue
 
             # Wait 5 seconds before trying all hosts again
-            sleep(5)
+            if not scanned:
+                sleep(5)
 
         # Get current episodes (after scan)
         episodes_after_scan = self.get_episodes_by_dir(show_dir)

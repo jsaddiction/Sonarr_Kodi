@@ -1,7 +1,6 @@
 """Sonarr_Kodi Event handler"""
 import logging
 from datetime import datetime
-from time import sleep
 from pathlib import PosixPath
 from src.environment import SonarrEnvironment
 from src.config import Config
