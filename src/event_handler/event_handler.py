@@ -24,7 +24,6 @@ class EventHandler:
     # ------------- Helpers --------------------
     def _wait_for_nfos(self, nfos: list[PosixPath]) -> bool:
         """Wait for all files in nfos list to be present before proceeding"""
-        delay = 1
         max_sec = (self.cfg.library.nfo_timeout_minuets * len(nfos)) * 60
         self.log.info("Waiting up to %s minuets for %s NFO Files.", max_sec / 60, len(nfos))
 
@@ -44,14 +43,12 @@ class EventHandler:
                     files_found.add(file)
 
                 # return false if we timed out
-                elif elapsed.total_seconds() >= max_sec:
+                if elapsed.total_seconds() >= max_sec:
                     self.log.warning("Exceeded %s waiting for %s NFO files.", elapsed, len(nfos))
                     self.log.warning("Missing NFO files. [%s]", ", ".join(nfos))
                     return False
 
-            sleep(delay)
-        sec_per_nfo = int(elapsed.total_seconds() / len(nfos))
-        self.log.info("All required NFO files were found after %s. %ss per file.", elapsed, sec_per_nfo)
+        self.log.info("All required NFO files were found after %s.", elapsed)
         return True
 
     # ------------- Events -------------------------
