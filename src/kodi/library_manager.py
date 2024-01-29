@@ -92,7 +92,7 @@ class LibraryManager:
             host.notify(notification)
 
     # -------------- Player Methods ----------------
-    def stop_playback(self, episode: EpisodeDetails, reason: str) -> None:
+    def stop_playback(self, episode: EpisodeDetails, reason: str, store_result: bool = True) -> None:
         """Stop playback of an episode on any host"""
         title = "Sonarr - Stopped Playback"
         stopped_episodes: list[StoppedEpisode] = []
@@ -113,7 +113,8 @@ class LibraryManager:
             return
 
         # Store result of stopped
-        self._serialize(stopped_episodes)
+        if store_result:
+            self._serialize(stopped_episodes)
 
         # Pause to allow UI to load
         sleep(3)
