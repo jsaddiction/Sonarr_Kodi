@@ -51,7 +51,7 @@ def config_log(log_cfg: LogCfg) -> None:
                 "class": "logging.StreamHandler",
                 "level": "WARNING",
                 "formatter": "console",
-                "stream": "ext://sys.stdout",
+                "stream": "ext://sys.stderr",
             },
         },
         "loggers": {
