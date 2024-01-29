@@ -128,6 +128,10 @@ class LibraryManager:
 
     def start_playback(self, episode: EpisodeDetails) -> None:
         """Resume playback of a previously stopped episode"""
+        # Do not attempt if nothing was previously stored
+        if not self.PICKLE_PATH.exists():
+            return
+
         stopped_episodes = self._deserialize()
         if stopped_episodes:
             self.log.debug("Attempting to restart episodes %s", stopped_episodes)
