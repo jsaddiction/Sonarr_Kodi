@@ -122,14 +122,6 @@ class EventHandler:
         """Downloaded an upgraded episode file"""
         self.log.info("Upgrade Episode Event Detected")
 
-        # optionally, wait for NFO files to generate
-        if self.cfg.library.wait_for_nfo:
-            ep_nfo = PosixPath(self.env.episode_file_path).with_suffix(".nfo")
-            show_nfo = PosixPath(self.env.series_path).joinpath("tvshow.nfo")
-            if not self._wait_for_nfos([ep_nfo, show_nfo]):
-                self.log.warning("NFO Files never created")
-                return
-
         # Store library data for replaced episodes and remove those entries
         removed_episodes = []
         for path in self.env.deleted_paths:
@@ -137,6 +129,14 @@ class EventHandler:
             for ep in old_eps:
                 if self.kodi.remove_episode(ep):
                     removed_episodes.append(ep)
+
+        # optionally, wait for NFO files to generate
+        if self.cfg.library.wait_for_nfo:
+            ep_nfo = PosixPath(self.env.episode_file_path).with_suffix(".nfo")
+            show_nfo = PosixPath(self.env.series_path).joinpath("tvshow.nfo")
+            if not self._wait_for_nfos([ep_nfo, show_nfo]):
+                self.log.warning("NFO Files never created")
+                return
 
         # Force library clean if manual removal failed
         if not removed_episodes:
@@ -177,15 +177,6 @@ class EventHandler:
         """Renamed an episode file"""
         self.log.info("File Rename Event Detected")
 
-        # Optionally, wait for nfo files to be created
-        if self.cfg.library.wait_for_nfo:
-            new_files = [PosixPath(self.env.series_path, x) for x in self.env.episode_file_rel_paths]
-            nfos = [x.with_suffix(".nfo") for x in new_files]
-            nfos.append(PosixPath(self.env.series_path, "tvshow.nfo"))
-            if not self._wait_for_nfos(nfos):
-                self.log.warning("NFO Files never created")
-                return
-
         # Store library data for replaced episodes and remove those entries
         removed_episodes = []
         for path in self.env.episode_file_previous_paths:
@@ -197,6 +188,15 @@ class EventHandler:
                 # Remove episode from library
                 if self.kodi.remove_episode(ep):
                     removed_episodes.append(ep)
+
+        # Optionally, wait for nfo files to be created
+        if self.cfg.library.wait_for_nfo:
+            new_files = [PosixPath(self.env.series_path, x) for x in self.env.episode_file_rel_paths]
+            nfos = [x.with_suffix(".nfo") for x in new_files]
+            nfos.append(PosixPath(self.env.series_path, "tvshow.nfo"))
+            if not self._wait_for_nfos(nfos):
+                self.log.warning("NFO Files never created")
+                return
 
         if not removed_episodes:
             self.log.warning("Failed to remove old episodes. Unable to persist watched states. Cleaning Required.")
