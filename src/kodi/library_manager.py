@@ -59,6 +59,7 @@ class LibraryManager:
     # -------------- Helpers -----------------------
     def _serialize(self, stopped_eps: list[StoppedEpisode]) -> None:
         """Serialize and store list of stopped episodes"""
+        self.log.debug("Storing stopped episodes. %s", stopped_eps)
         try:
             with self.PICKLE_PATH.open(mode="wb") as file:
                 pickle.dump(stopped_eps, file)
@@ -69,13 +70,13 @@ class LibraryManager:
         """Deserialize previously recorded data for replaying stopped episodes"""
         try:
             with self.PICKLE_PATH.open(mode="rb") as file:
-                return pickle.load(file)
+                data = pickle.load(file)
+            self.PICKLE_PATH.unlink()
         except IOError as e:
             self.log.warning("Failed to load previously stored episode data. ERROR: %s", e)
-        finally:
-            self.PICKLE_PATH.unlink()
+            return []
 
-        return []
+        return data
 
     # -------------- GUI Methods -------------------
     def update_guis(self) -> None:
@@ -302,7 +303,7 @@ class LibraryManager:
             for old_ep in old_eps:
                 for new_ep in new_eps:
                     if old_ep == new_ep:
-                        self.log.info("Applying %s to new episode : %s", old_ep.watched_state, new_ep)
+                        self.log.info("Applying metadata to new episode : %s", new_ep)
                         try:
                             host.set_episode_watched_state(old_ep, new_ep.episode_id)
                             edited_episodes.add(host.get_episode_from_id(new_ep.episode_id))

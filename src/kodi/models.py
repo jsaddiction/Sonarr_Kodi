@@ -237,3 +237,6 @@ class StoppedEpisode:
     episode: EpisodeDetails
     host_name: str
     position: float
+
+    def __str__(self) -> str:
+        return f"{self.episode} on {self.host_name} stopped at {self.position}"
