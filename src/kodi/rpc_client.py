@@ -228,13 +228,6 @@ class KodiRPC:
 
         return resp.result["percentage"]
 
-    # def _stop_player(self, player_id: int) -> None:
-    #     """Stops an active player"""
-    #     params = {"playerid": player_id}
-    #     resp = self._req("Player.Stop", params=params)
-    #     if not resp.is_valid("OK"):
-    #         raise APIError(f"Failed to stop the active player. Error: {resp.error}")
-
     def _wait_for_video_scan(self) -> timedelta:
         """Wait for video scan to complete"""
         max_time_sec = 1800  # 30 Min
