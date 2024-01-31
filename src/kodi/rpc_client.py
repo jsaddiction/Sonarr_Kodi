@@ -386,16 +386,14 @@ class KodiRPC:
         if not resp.is_valid("OK"):
             self.log.warning("Invalid response while starting episode. Error: %s", resp.error)
 
+        # Wait for player to start
         start = datetime.now()
-        while True:
-            duration = datetime.now() - start
-            if self.active_players:
-                break
-
-            if duration.total_seconds() > 5:
+        while not self.active_players:
+            if (datetime.now() - start).total_seconds() > 5:
                 self.log.warning("Failed to get any active players within 5 seconds.")
                 return None
 
+        # Get the player
         for player in self.active_players:
             item = self.get_player_item(player.player_id)
             if item.type == "episode" and item.item_id == episode_id:
