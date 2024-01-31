@@ -60,7 +60,27 @@ class KodiRPC:
     @property
     def is_playing(self) -> bool:
         """Return True if Kodi Host is currently playing content"""
-        return len(self._get_active_players()) > 0
+        return bool(self.active_players)
+
+    @property
+    def active_players(self) -> list[Player]:
+        """Get a list of active players"""
+        active_players: list[Player] = []
+
+        resp = self._req("Player.GetActivePlayers")
+        if not resp.is_valid():
+            return active_players
+
+        for active_player in resp.result:
+            active_players.append(
+                Player(
+                    player_id=active_player["playerid"],
+                    player_type=active_player["playertype"],
+                    type=active_player["type"],
+                )
+            )
+
+        return active_players
 
     @property
     def is_scanning(self) -> bool:
@@ -185,49 +205,6 @@ class KodiRPC:
             return str(PurePosixPath(path).parent)
         return str(PureWindowsPath(path).parent)
 
-    def _get_active_players(self) -> list[Player]:
-        """Get a list of player ids that are playing a file"""
-        active_players: list[Player] = []
-
-        resp = self._req("Player.GetActivePlayers")
-        if not resp.is_valid():
-            return active_players
-
-        for active_player in resp.result:
-            active_players.append(
-                Player(
-                    player_id=active_player["playerid"],
-                    player_type=active_player["playertype"],
-                    type=active_player["type"],
-                )
-            )
-
-        return active_players
-
-    def _get_player_item(self, player_id: int) -> PlayerItem | None:
-        """Get items a given player is playing"""
-        params = {"playerid": player_id}
-        resp = self._req("Player.GetItem", params=params)
-        if not resp.is_valid("item"):
-            self.log.warning("Failed to get player item. Error: %s", resp.error)
-            return None
-
-        data = resp.result["item"]
-        return PlayerItem(
-            item_id=data["id"],
-            label=data["label"],
-            type=data["type"],
-        )
-
-    def _get_player_position(self, player_id: int) -> float:
-        """Get current position of an active player"""
-        params = {"playerid": player_id, "properties": ["percentage"]}
-        resp = self._req("Player.GetProperties", params=params)
-        if not resp.is_valid("percentage"):
-            raise APIError(f"Failed to get player position. Error: {resp.error}")
-
-        return resp.result["percentage"]
-
     def _wait_for_video_scan(self) -> timedelta:
         """Wait for video scan to complete"""
         max_time_sec = 1800  # 30 Min
@@ -350,37 +327,56 @@ class KodiRPC:
             return
 
     # --------------- Player Methods -----------------
-    def is_playing_episode(self, episode_id: int) -> int | None:
-        """If this host is playing the given episode, return the playerid"""
-        for player in self._get_active_players():
-            if player.type.lower() != "video":
-                continue
+    def is_paused(self, player_id: int) -> bool:
+        """Return True if player is currently paused"""
+        params = {"playerid": player_id, "properties": ["speed"]}
+        resp = self._req("Player.GetProperties", params=params)
+        if not resp.is_valid("speed"):
+            raise APIError(f"Failed to get player speed. Error: {resp.error}")
 
-            # Get the item playing
-            item = self._get_player_item(player.player_id)
-            if not item or item.type != "episode":
-                continue
+        return int(resp.result["speed"]) == 0
 
-            # Check if item is same as episode provided
-            if item.item_id == episode_id:
-                return player.player_id
+    def player_percent(self, player_id: int) -> float:
+        """Return Position of player in percent complete"""
+        params = {"playerid": player_id, "properties": ["percentage"]}
+        resp = self._req("Player.GetProperties", params=params)
+        if not resp.is_valid("percentage"):
+            raise APIError(f"Failed to get player position. Error: {resp.error}")
 
-        return None
+        return resp.result["percentage"]
 
-    def stop_player(self, player_id: int) -> float | None:
-        """Stops a player, return position"""
-        try:
-            position = self._get_player_position(player_id)
-        except APIError as e:
-            self.log.warning(e)
+    def get_player_item(self, player_id: int) -> PlayerItem | None:
+        """Get items a given player is playing"""
+        params = {"playerid": player_id}
+        resp = self._req("Player.GetItem", params=params)
+        if not resp.is_valid("item"):
+            self.log.warning("Failed to get player item. Error: %s", resp.error)
             return None
 
+        data = resp.result["item"]
+        return PlayerItem(
+            item_id=data["id"],
+            label=data["label"],
+            type=data["type"],
+        )
+
+    def pause_player(self, player_id: int) -> None:
+        """Pauses a player"""
+        params = {"playerid": player_id}
+        while True:
+            resp = self._req("Player.PlayPause", params=params)
+            if not resp.is_valid("speed"):
+                raise APIError(f"Failed to toggle play/pause of player. Error: {resp.error}")
+
+            if resp.result["speed"] == 0:
+                return
+
+    def stop_player(self, player_id: int) -> None:
+        """Stops a player"""
         params = {"playerid": player_id}
         resp = self._req("Player.Stop", params=params)
         if not resp.is_valid("OK"):
             raise APIError(f"Failed to stop the active player. Error: {resp.error}")
-
-        return position
 
     def start_episode(self, episode_id: int, position: float) -> None:
         """Play a given episode"""

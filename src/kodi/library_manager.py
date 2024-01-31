@@ -96,28 +96,39 @@ class LibraryManager:
         """Stop playback of an episode on any host"""
         title = "Sonarr - Stopped Playback"
         stopped_episodes: list[StoppedEpisode] = []
+
+        # Loop through players, get episode_id and player_id
         for host in self.hosts:
-            # Skip host if not playing the episode, otherwise collect playerid
-            player_id = host.is_playing_episode(episode.episode_id)
-            if player_id is None:
-                continue
+            for player in host.active_players:
+                item = host.get_player_item(player.player_id)
 
-            # Stop the player and collect position
-            self.log.info("%s Stopping playback of %s", host.name, episode)
-            position = host.stop_player(player_id)
-            if position is not None:
-                stopped_episodes.append(StoppedEpisode(episode=episode, host_name=host.name, position=position))
+                # Skip if not an episode
+                if item and item.type.lower() != "episode":
+                    continue
 
-        # Return early if nothing was stopped
+                # Skip if not the episode we are looking for
+                if item.item_id != episode.episode_id:
+                    continue
+
+                # Stop the player and collect position, paused state
+                self.log.info("%s Stopping playback of %s", host.name, episode)
+                paused = host.is_paused(player.player_id)
+                position = host.player_percent(player.player_id)
+                host.stop_player(player.player_id)
+                stopped_episodes.append(
+                    StoppedEpisode(episode=episode, host_name=host.name, position=position, paused=paused)
+                )
+
+        # Return early if nothing was stopped on any host
         if not stopped_episodes:
             return
 
-        # Store result of stopped
+        # Store results of stopped episodes
         if store_result:
             self._serialize(stopped_episodes)
 
-        # Pause to allow UI to load
-        sleep(3)
+        # Pause to allow UI to load before sending notifications
+        sleep(2)
 
         # Send notifications about the stopped episode to the GUI
         for host in self.hosts:
@@ -147,6 +158,10 @@ class LibraryManager:
 
                 # Start playback
                 host.start_episode(episode.episode_id, ep.position)
+
+                # Pause if was previously paused
+                if ep.paused:
+                    host.pause_player()
 
     # -------------- Library Scanning --------------
     def scan_directory(self, show_dir: str, skip_active: bool = False) -> list[EpisodeDetails]:
