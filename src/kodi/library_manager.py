@@ -157,11 +157,11 @@ class LibraryManager:
                     continue
 
                 # Start playback
-                host.start_episode(episode.episode_id, ep.position)
+                player = host.start_episode(episode.episode_id, ep.position)
 
                 # Pause if was previously paused
                 if ep.paused:
-                    host.pause_player()
+                    host.pause_player(player.player_id)
 
     # -------------- Library Scanning --------------
     def scan_directory(self, show_dir: str, skip_active: bool = False) -> list[EpisodeDetails]:

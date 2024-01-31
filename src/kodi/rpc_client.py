@@ -378,13 +378,20 @@ class KodiRPC:
         if not resp.is_valid("OK"):
             raise APIError(f"Failed to stop the active player. Error: {resp.error}")
 
-    def start_episode(self, episode_id: int, position: float) -> None:
+    def start_episode(self, episode_id: int, position: float) -> Player:
         """Play a given episode"""
         self.log.info("Restarting Episode %s", episode_id)
         params = {"item": {"episodeid": episode_id}, "options": {"resume": position}}
         resp = self._req("Player.Open", params=params)
         if not resp.is_valid("OK"):
             self.log.warning("Invalid response while starting episode. Error: %s", resp.error)
+
+        for player in self.active_players:
+            item = self.get_player_item(player.player_id)
+            if item.type == "episode" and item.item_id == episode_id:
+                return player
+
+        return None
 
     # --------------- Library Methods ----------------
     def scan_series_dir(self, directory: str) -> None:
