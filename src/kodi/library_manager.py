@@ -135,7 +135,7 @@ class LibraryManager:
             for stopped_ep in stopped_episodes:
                 if host.name != stopped_ep.host_name:
                     continue
-                host.notify(Notification(title=title, msg=reason))
+                host.notify(Notification(title=title, msg=reason), force=True)
 
     def start_playback(self, episode: EpisodeDetails) -> None:
         """Resume playback of a previously stopped episode"""

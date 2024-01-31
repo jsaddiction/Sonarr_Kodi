@@ -308,9 +308,9 @@ class KodiRPC:
         if not resp.is_valid("OK"):
             self.log.warning("Failed to update GUI. ERROR: %s", resp.error)
 
-    def notify(self, notification: Notification) -> None:
+    def notify(self, notification: Notification, force: bool = False) -> None:
         """Send GUI Notification to Kodi Host"""
-        if self.disable_notifications:
+        if self.disable_notifications and not force:
             self.log.debug("All Host GUI Notifications disabled. Skipping.")
             return
 
