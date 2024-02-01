@@ -18,7 +18,6 @@ from .models import (
     ResumeState,
     EpisodeDetails,
     ShowDetails,
-    Source,
     Player,
     PlayerItem,
     EP_PROPERTIES,
@@ -46,6 +45,7 @@ class KodiRPC:
         self.library_scanned = False
         self.platform: Platform = None
 
+    # used
     @property
     def is_alive(self) -> bool:
         """Return True if Kodi Host is responsive"""
@@ -57,6 +57,7 @@ class KodiRPC:
                 self.log.critical("Connection Failed: Check kodi config.")
         return resp.is_valid("pong")
 
+    # used
     @property
     def is_playing(self) -> bool:
         """Return True if Kodi Host is currently playing content"""
@@ -235,6 +236,7 @@ class KodiRPC:
         if not resp.is_valid("OK"):
             raise APIError(f"Invalid response while setting resume point. Error: {resp.error}")
 
+    # used
     def _req(self, method: str, params: dict = None, timeout: int = None) -> KodiResponse | None:
         """Send request to this Kodi Host"""
         req_params = {"jsonrpc": "2.0", "id": self.REQ_ID, "method": method}
@@ -300,6 +302,7 @@ class KodiRPC:
         return Platform.UNKNOWN
 
     # --------------- UI Methods ---------------------
+    # used
     def update_gui(self) -> None:
         """Update GUI|Widgets by scanning a non existent path"""
         params = {"directory": "/does_not_exist/", "showdialogs": False}
@@ -308,6 +311,7 @@ class KodiRPC:
         if not resp.is_valid("OK"):
             self.log.warning("Failed to update GUI. ERROR: %s", resp.error)
 
+    # used
     def notify(self, notification: Notification, force: bool = False) -> None:
         """Send GUI Notification to Kodi Host"""
         if self.disable_notifications and not force:
@@ -327,6 +331,7 @@ class KodiRPC:
             return
 
     # --------------- Player Methods -----------------
+    # used
     def is_paused(self, player_id: int) -> bool:
         """Return True if player is currently paused"""
         params = {"playerid": player_id, "properties": ["speed"]}
@@ -336,6 +341,7 @@ class KodiRPC:
 
         return int(resp.result["speed"]) == 0
 
+    # used
     def player_percent(self, player_id: int) -> float:
         """Return Position of player in percent complete"""
         params = {"playerid": player_id, "properties": ["percentage"]}
@@ -345,6 +351,7 @@ class KodiRPC:
 
         return resp.result["percentage"]
 
+    # used
     def get_player_item(self, player_id: int) -> PlayerItem | None:
         """Get items a given player is playing"""
         params = {"playerid": player_id}
@@ -360,6 +367,7 @@ class KodiRPC:
             type=data["type"],
         )
 
+    # used
     def pause_player(self, player_id: int) -> None:
         """Pauses a player"""
         params = {"playerid": player_id}
@@ -371,6 +379,7 @@ class KodiRPC:
             if resp.result["speed"] == 0:
                 return
 
+    # used
     def stop_player(self, player_id: int) -> None:
         """Stops a player"""
         params = {"playerid": player_id}
@@ -378,6 +387,7 @@ class KodiRPC:
         if not resp.is_valid("OK"):
             raise APIError(f"Failed to stop the active player. Error: {resp.error}")
 
+    # used
     def start_episode(self, episode_id: int, position: float) -> Player:
         """Play a given episode"""
         self.log.info("Restarting Episode %s", episode_id)
@@ -402,6 +412,7 @@ class KodiRPC:
         return None
 
     # --------------- Library Methods ----------------
+    # used
     def scan_series_dir(self, directory: str) -> None:
         """Scan a directory"""
         # Ensure trailing slash
@@ -420,6 +431,7 @@ class KodiRPC:
         self.log.info("Scan completed in %s", elapsed)
         self.library_scanned = True
 
+    # used
     def full_video_scan(self) -> None:
         """Perform full video library scan"""
         params = {"showdialogs": False}
@@ -431,6 +443,7 @@ class KodiRPC:
         self.log.info("Scan completed in %s", elapsed)
         self.library_scanned = True
 
+    # used
     def clean_video_library(self, series_dir: str = None) -> None:
         """Clean Video Library"""
         params = {"showdialogs": False}
@@ -449,18 +462,8 @@ class KodiRPC:
         self._wait_for_video_scan()
         self.library_scanned = True
 
-    def get_show_sources(self) -> list[Source]:
-        """Get all sources which contain at least one episode of a Tv Show"""
-        params = {"media": "video"}
-        self.log.debug("Getting all sources")
-        resp = self._req("Files.GetSources", params=params)
-
-        if not resp.is_valid("sources"):
-            raise APIError("Invalid response while collecting sources")
-
-        return [Source(**x) for x in resp.result["sources"]]
-
     # ----------------- Episode Methods ---------------
+    # used
     def set_episode_watched_state(self, episode: EpisodeDetails, new_ep_id: int) -> None:
         """Set Episode Watched State"""
         self.log.debug("Setting watched state %s on %s", episode.watched_state, episode)
@@ -479,6 +482,7 @@ class KodiRPC:
         if not resp.is_valid("OK"):
             raise APIError(f"Invalid response while setting watched state. ERROR: {resp.error}")
 
+    # used
     def get_all_episodes(self) -> list[EpisodeDetails]:
         """Get all episodes in library, waits upto a minuet for response"""
         self.log.debug("Getting all episodes")
@@ -490,6 +494,7 @@ class KodiRPC:
 
         return self._parse_ep_details(resp.result["episodes"])
 
+    # used
     def get_episodes_from_file(self, file_path: str) -> list[EpisodeDetails]:
         """Get details of episodes given a file_path"""
         mapped_path = self._map_path(file_path)
@@ -513,6 +518,7 @@ class KodiRPC:
 
         return self._parse_ep_details(resp.result["episodes"])
 
+    # used
     def get_episodes_from_dir(self, series_dir: str) -> list[EpisodeDetails]:
         """Get all episodes given a directory"""
         mapped_path = self._map_path(series_dir)
@@ -529,6 +535,7 @@ class KodiRPC:
 
         return self._parse_ep_details(resp.result["episodes"])
 
+    # used
     def get_episode_from_id(self, episode_id: int) -> EpisodeDetails:
         """Get details of a specific episode"""
         params = {"episodeid": episode_id, "properties": EP_PROPERTIES}
@@ -544,6 +551,7 @@ class KodiRPC:
 
         return None
 
+    # used
     def remove_episode(self, episode_id: int) -> None:
         """Remove an episode from library and return it's details"""
         params = {"episodeid": episode_id}
@@ -556,6 +564,7 @@ class KodiRPC:
         self.library_scanned = True
 
     # ------------------ Show Methods ------------------
+    # used
     def remove_tvshow(self, show_id: int) -> ShowDetails:
         """Remove a TV Show from library and return it's details"""
         show_details = self.get_show_from_id(show_id)
@@ -570,6 +579,7 @@ class KodiRPC:
 
         return show_details
 
+    # used
     def get_shows_from_dir(self, directory: str) -> list[ShowDetails]:
         """Get list of shows within a directory"""
         mapped_path = self._map_path(directory)
@@ -586,6 +596,7 @@ class KodiRPC:
 
         return self._parse_show_details(resp.result["tvshows"])
 
+    # used
     def get_show_from_id(self, show_id: int) -> ShowDetails:
         """Get details of a specific TV Show"""
         params = {"tvshowid": show_id, "properties": SHOW_PROPERTIES}

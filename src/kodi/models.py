@@ -122,14 +122,6 @@ class PlayerItem:
 
 
 @dataclass
-class Source:
-    """Directory of a Show"""
-
-    file: str
-    label: str
-
-
-@dataclass
 class ResumeState:
     """Resume Point of a Media Item"""
 
@@ -207,8 +199,8 @@ class EpisodeDetails:
     file: str = field(compare=False, hash=False)
     show_title: str = field(compare=False, hash=False)
     episode_title: str = field(compare=False, hash=False)
-    season: str = field(compare=True, hash=True)
-    episode: str = field(compare=True, hash=True)
+    season: int = field(compare=True, hash=True)
+    episode: int = field(compare=True, hash=True)
     watched_state: WatchedState = field(compare=False, hash=False)
 
     @staticmethod
