@@ -1,7 +1,7 @@
 """Sonarr_Kodi Event handler"""
 import logging
 from datetime import datetime
-from pathlib import PosixPath
+from pathlib import Path
 from src.environment import SonarrEnvironment
 from src.config import Config
 from src.kodi import LibraryManager, Notification
@@ -21,7 +21,7 @@ class EventHandler:
         self.log = logging.getLogger("EventHandler")
 
     # ------------- Helpers --------------------
-    def _wait_for_nfos(self, nfos: list[PosixPath]) -> bool:
+    def _wait_for_nfos(self, nfos: list[Path]) -> bool:
         """Wait for all files in nfos list to be present before proceeding"""
         max_sec = (self.cfg.library.nfo_timeout_minuets * len(nfos)) * 60
         self.log.info("Waiting up to %s minuets for %s NFO Files.", max_sec / 60, len(nfos))
@@ -73,8 +73,8 @@ class EventHandler:
 
         # optionally, wait for NFO files to generate
         if self.cfg.library.wait_for_nfo:
-            ep_nfo = PosixPath(self.env.episode_file_path).with_suffix(".nfo")
-            show_nfo = PosixPath(self.env.series_path).joinpath("tvshow.nfo")
+            ep_nfo = Path(self.env.episode_file_path).with_suffix(".nfo")
+            show_nfo = Path(self.env.series_path).joinpath("tvshow.nfo")
             if not self._wait_for_nfos([ep_nfo, show_nfo]):
                 return
 
@@ -128,8 +128,8 @@ class EventHandler:
 
         # optionally, wait for NFO files to generate
         if self.cfg.library.wait_for_nfo:
-            ep_nfo = PosixPath(self.env.episode_file_path).with_suffix(".nfo")
-            show_nfo = PosixPath(self.env.series_path).joinpath("tvshow.nfo")
+            ep_nfo = Path(self.env.episode_file_path).with_suffix(".nfo")
+            show_nfo = Path(self.env.series_path).joinpath("tvshow.nfo")
             if not self._wait_for_nfos([ep_nfo, show_nfo]):
                 self.log.warning("NFO Files never created")
                 return
@@ -187,9 +187,9 @@ class EventHandler:
 
         # Optionally, wait for nfo files to be created
         if self.cfg.library.wait_for_nfo:
-            new_files = [PosixPath(self.env.series_path, x) for x in self.env.episode_file_rel_paths]
+            new_files = [Path(self.env.series_path, x) for x in self.env.episode_file_rel_paths]
             nfos = [x.with_suffix(".nfo") for x in new_files]
-            nfos.append(PosixPath(self.env.series_path, "tvshow.nfo"))
+            nfos.append(Path(self.env.series_path, "tvshow.nfo"))
             if not self._wait_for_nfos(nfos):
                 self.log.warning("NFO Files never created")
                 return
