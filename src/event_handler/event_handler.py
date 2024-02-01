@@ -5,10 +5,7 @@ from pathlib import Path
 from src.environment import SonarrEnvironment
 from src.config import Config
 from src.kodi import LibraryManager, Notification
-
-
-class NFOTimeout(Exception):
-    """Timed out while waiting for NFO to be created"""
+from .exceptions import NFOTimeout
 
 
 class EventHandler:
@@ -21,7 +18,7 @@ class EventHandler:
         self.log = logging.getLogger("EventHandler")
 
     # ------------- Helpers --------------------
-    def _wait_for_nfos(self, nfos: list[Path]) -> bool:
+    def _wait_for_nfos(self, nfos: list[Path]) -> None:
         """Wait for all files in nfos list to be present before proceeding"""
         max_sec = (self.cfg.library.nfo_timeout_minuets * len(nfos)) * 60
         self.log.info("Waiting up to %s minuets for %s NFO Files.", max_sec / 60, len(nfos))
@@ -43,12 +40,9 @@ class EventHandler:
 
                 # return false if we timed out
                 if elapsed.total_seconds() >= max_sec:
-                    self.log.warning("Exceeded %s waiting for %s NFO files.", elapsed, len(nfos))
-                    self.log.warning("Missing NFO files. [%s]", ", ".join(nfos))
-                    return False
+                    raise NFOTimeout(elapsed_time=elapsed, missing_nfos=[x for x in nfos if x not in files_found])
 
         self.log.info("All required NFO files were found after %s.", elapsed)
-        return True
 
     # ------------- Events -------------------------
     def grab(self) -> None:
@@ -75,7 +69,10 @@ class EventHandler:
         if self.cfg.library.wait_for_nfo:
             ep_nfo = Path(self.env.episode_file_path).with_suffix(".nfo")
             show_nfo = Path(self.env.series_path).joinpath("tvshow.nfo")
-            if not self._wait_for_nfos([ep_nfo, show_nfo]):
+            try:
+                self._wait_for_nfos([ep_nfo, show_nfo])
+            except NFOTimeout as e:
+                self.log.critical("Failed to find NFOs. %s", e)
                 return
 
         # New Show, perform full scan
@@ -130,8 +127,10 @@ class EventHandler:
         if self.cfg.library.wait_for_nfo:
             ep_nfo = Path(self.env.episode_file_path).with_suffix(".nfo")
             show_nfo = Path(self.env.series_path).joinpath("tvshow.nfo")
-            if not self._wait_for_nfos([ep_nfo, show_nfo]):
-                self.log.warning("NFO Files never created")
+            try:
+                self._wait_for_nfos([ep_nfo, show_nfo])
+            except NFOTimeout as e:
+                self.log.critical("Failed to find NFOs. %s", e)
                 return
 
         # Force library clean if manual removal failed
@@ -190,8 +189,10 @@ class EventHandler:
             new_files = [Path(self.env.series_path, x) for x in self.env.episode_file_rel_paths]
             nfos = [x.with_suffix(".nfo") for x in new_files]
             nfos.append(Path(self.env.series_path, "tvshow.nfo"))
-            if not self._wait_for_nfos(nfos):
-                self.log.warning("NFO Files never created")
+            try:
+                self._wait_for_nfos(nfos)
+            except NFOTimeout as e:
+                self.log.critical("Failed to find NFOs. %s", e)
                 return
 
         if not removed_episodes:
