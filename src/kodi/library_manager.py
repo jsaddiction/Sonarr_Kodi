@@ -79,6 +79,19 @@ class LibraryManager:
 
         return data
 
+    def _get_all_episodes(self) -> list[EpisodeDetails]:
+        """Get all episodes from library
+        This is Library expensive operation
+        """
+        self.log.info("Getting all episodes. This may take a moment.")
+        for host in self.hosts:
+            try:
+                return host.get_all_episodes()
+            except APIError:
+                self.log.warning("%s Failed to get all episodes.", host.name)
+                continue
+        return []
+
     # -------------- GUI Methods -------------------
     def update_guis(self) -> None:
         """Update GUI for all hosts not scanned"""
@@ -207,7 +220,7 @@ class LibraryManager:
         This is an IO and library expensive operation.
         """
         # Get episodes before scan
-        episodes_before_scan = self.get_all_episodes()
+        episodes_before_scan = self._get_all_episodes()
 
         # Scan Video library
         scanned = False
@@ -232,17 +245,10 @@ class LibraryManager:
                 sleep(5)
 
         # Get episodes after scan
-        episodes_after_scan = self.get_all_episodes()
+        episodes_after_scan = self._get_all_episodes()
 
-        # Calculate added episodes after scan
-        new_episodes = [x for x in episodes_after_scan if x not in episodes_before_scan]
-
-        # Restart any episodes that were playing
-        for episode in new_episodes:
-            for host in [x for x in self.hosts if x.stop_episode]:
-                host.play_episode(episode)
-
-        return new_episodes
+        # Calculate added episodes after scan and return
+        return [x for x in episodes_after_scan if x not in episodes_before_scan]
 
     def clean_library(self, skip_active: bool = False, series_dir: str = None) -> None:
         """Clean Library and wait for completion"""
@@ -270,19 +276,6 @@ class LibraryManager:
                 sleep(5)
 
     # -------------- Episode Methods --------------
-    def get_all_episodes(self) -> list[EpisodeDetails]:
-        """Get all episodes from library
-        This is Library expensive operation
-        """
-        self.log.info("Getting all episodes. This may take a moment.")
-        for host in self.hosts:
-            try:
-                return host.get_all_episodes()
-            except APIError:
-                self.log.warning("%s Failed to get all episodes.", host.name)
-                continue
-        return []
-
     def get_episodes_by_dir(self, show_dir) -> list[EpisodeDetails]:
         """Get all episodes contained in a directory"""
         for host in self.hosts:
@@ -382,4 +375,4 @@ class LibraryManager:
                 return host.get_shows_from_dir(series_path)
             except APIError:
                 continue
-        return False
+        return []
