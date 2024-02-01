@@ -198,18 +198,18 @@ class ShowDetails:
         return f"{self.title} ({self.year})"
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, order=False, eq=True)
 class EpisodeDetails:
     """Details of an episode"""
 
-    episode_id: int
-    show_id: int
-    file: str
-    show_title: str
-    episode_title: str
-    season: str
-    episode: str
-    watched_state: WatchedState
+    episode_id: int = field(compare=False, hash=False)
+    show_id: int = field(compare=True, hash=True)
+    file: str = field(compare=False, hash=False)
+    show_title: str = field(compare=False, hash=False)
+    episode_title: str = field(compare=False, hash=False)
+    season: str = field(compare=True, hash=True)
+    episode: str = field(compare=True, hash=True)
+    watched_state: WatchedState = field(compare=False, hash=False)
 
     @staticmethod
     def sanitize_ep_title(raw_title: str) -> str:
@@ -217,14 +217,6 @@ class EpisodeDetails:
         if "-" in raw_title:
             return raw_title.rsplit(" - ", 1)[-1].strip()
         return raw_title
-
-    def __hash__(self):
-        return hash((self.show_id, self.season, self.episode))
-
-    def __eq__(self, other) -> bool:
-        if not isinstance(other, EpisodeDetails):
-            return False
-        return self.show_id == other.show_id and self.season == other.season and self.episode == other.episode
 
     def __str__(self) -> str:
         return f"{self.show_title} - S{self.season:02}E{self.episode:02} - {self.sanitize_ep_title(self.episode_title)}"
