@@ -107,20 +107,6 @@ class KodiRPC:
             return None
 
     @staticmethod
-    def _to_int(num_str: str) -> int | None:
-        try:
-            return int(num_str)
-        except (ValueError, TypeError):
-            return None
-
-    @staticmethod
-    def _to_float(float_str: str) -> float:
-        try:
-            return float(float_str)
-        except (ValueError, TypeError):
-            return 0.0
-
-    @staticmethod
     def _parse_response_error(error: dict) -> KodiResponseError | None:
         """Parse error data into dataclass"""
         if not error:
@@ -145,10 +131,10 @@ class KodiRPC:
         for show in shows:
             show_details_lst.append(
                 ShowDetails(
-                    show_id=KodiRPC._to_int(show["tvshowid"]),
+                    show_id=show["tvshowid"],
                     file=show["file"],
                     title=show["title"],
-                    year=KodiRPC._to_int(show["year"]),
+                    year=show["year"],
                 )
             )
         return show_details_lst
@@ -159,20 +145,20 @@ class KodiRPC:
         for episode in episodes:
             ep_details_lst.append(
                 EpisodeDetails(
-                    episode_id=KodiRPC._to_int(episode["episodeid"]),
-                    show_id=KodiRPC._to_int(episode["tvshowid"]),
+                    episode_id=episode["episodeid"],
+                    show_id=episode["tvshowid"],
                     file=episode["file"],
                     show_title=episode["showtitle"],
                     episode_title=episode["title"],
-                    season=KodiRPC._to_int(episode["season"]),
-                    episode=KodiRPC._to_int(episode["episode"]),
+                    season=episode["season"],
+                    episode=episode["episode"],
                     watched_state=WatchedState(
-                        play_count=KodiRPC._to_int(episode["playcount"]),
+                        play_count=episode["playcount"],
                         date_added=KodiRPC._to_dt(episode["dateadded"]),
                         last_played=KodiRPC._to_dt(episode["lastplayed"]),
                         resume=ResumeState(
-                            position=KodiRPC._to_int(episode["resume"]["position"]),
-                            total=KodiRPC._to_int(episode["resume"]["total"]),
+                            position=episode["resume"]["position"],
+                            total=episode["resume"]["total"],
                         ),
                     ),
                 )
@@ -218,21 +204,6 @@ class KodiRPC:
 
             if elapsed.total_seconds() >= max_time_sec:
                 raise ScanTimeout(f"Scan timed out after {elapsed}")
-
-    def _set_resume_state(self, resume: ResumeState, episode_id: int) -> None:
-        """Set episode resume state"""
-        self.log.debug("Setting resume point %s on episode %s", resume, episode_id)
-        params = {
-            "episodeid": episode_id,
-            "resume": {
-                "position": resume.position,
-                "total": resume.total,
-            },
-        }
-        resp = self._req("VideoLibrary.SetEpisodeDetails", params=params)
-
-        if not resp.is_valid("OK"):
-            raise APIError(f"Invalid response while setting resume point. Error: {resp.error}")
 
     def _req(self, method: str, params: dict = None, timeout: int = None) -> KodiResponse | None:
         """Send request to this Kodi Host"""
