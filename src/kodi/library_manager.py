@@ -37,14 +37,8 @@ class LibraryManager:
             # Test and store host
             self.log.debug("Testing connection with %s", cfg.name)
             if host.is_alive:
+                self.log.info("Connection established with: %s", host)
                 self.hosts.append(host)
-
-        self.log.info("Connection established with: [%s]", self.host_names)
-
-    @property
-    def host_names(self) -> str:
-        """Comma separated list of host names"""
-        return ", ".join([x.name for x in self.hosts])
 
     @property
     def hosts_not_scanned(self) -> list[KodiRPC]:
