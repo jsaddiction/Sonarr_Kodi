@@ -27,6 +27,11 @@ def main() -> None:
     kodi = LibraryManager(cfg.hosts, cfg.library.path_mapping)
     event_handler = EventHandler(ENV, cfg, kodi)
 
+    log.debug("========== Environment ==========")
+    for k, v in ENV.raw_vars.items():
+        log.debug("%s = %s", k, v)
+    log.debug("========== Environment ==========")
+
     if len(kodi.hosts) == 0:
         log.critical("Unable to modify library. No active Kodi Hosts.")
         return

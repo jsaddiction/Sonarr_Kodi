@@ -10,6 +10,7 @@ import requests
 from .config import HostConfig
 from .exceptions import APIError, ScanTimeout
 from .models import (
+    RPCVersion,
     Platform,
     Notification,
     KodiResponse,
@@ -44,6 +45,20 @@ class KodiRPC:
         self.path_maps = cfg.path_maps
         self.library_scanned = False
         self.platform: Platform = None
+
+    @property
+    def rpc_version(self) -> RPCVersion:
+        """Return JSON-RPC Version of host"""
+        resp = self._req("JSONRPC.Version")
+        if not resp.is_valid("version"):
+            self.log.warning("Failed to get JSON-RPC version.")
+
+        data = resp.result.get("version")
+
+        if not data:
+            return None
+
+        return RPCVersion(major=data.get("major"), minor=data.get("minor"), patch=data.get("patch"))
 
     @property
     def is_alive(self) -> bool:

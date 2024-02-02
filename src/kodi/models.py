@@ -36,6 +36,18 @@ class Platform(Enum):
     UNKNOWN = "Unknown"
 
 
+@dataclass(frozen=True, order=True)
+class RPCVersion:
+    """JSON-RPC Version info"""
+
+    major: int
+    minor: int
+    patch: int = field(compare=False)
+
+    def __str__(self) -> str:
+        return f"{self.major}.{self.minor}.{self.patch}"
+
+
 @dataclass
 class Notification:
     """Kodi Notification"""

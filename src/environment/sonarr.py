@@ -1,5 +1,4 @@
 """Sonarr Environment parser"""
-import logging
 from dataclasses import dataclass, field, fields
 from enum import Enum
 from typing import get_args, get_origin, Any
@@ -36,8 +35,6 @@ class SonarrEnvironment:
     """Sonarr Environment Variables"""
 
     event_type: Events = field(default=Events.UNKNOWN, metadata={"var": "Sonarr_EventType"})
-    instance_name: str = field(default=None, metadata={"var": "Sonarr_InstanceName"})
-    application_url: str = field(default=None, metadata={"var": "Sonarr_ApplicationUrl"})
     series_title: str = field(default=None, metadata={"var": "Sonarr_Series_Title"})
     series_year: int = field(default=None, metadata={"var": "Sonarr_Series_Year"})
     series_path: str = field(default=None, metadata={"var": "Sonarr_Series_Path"})
@@ -56,12 +53,9 @@ class SonarrEnvironment:
     deleted_paths: list[str] = field(default_factory=list, metadata={"var": "Sonarr_deletedpaths"})
     is_upgrade: bool = field(default=None, metadata={"var": "Sonarr_IsUpgrade"})
     health_issue_msg: str = field(default=None, metadata={"var": "Sonarr_Health_Issue_Message"})
-    health_issue_type: str = field(default=None, metadata={"var": "Sonarr_Health_Issue_Type"})
     health_restored_msg: str = field(default=None, metadata={"var": "Sonarr_Health_Restored_Message"})
-    health_restored_type: str = field(default=None, metadata={"var": "Sonarr_Health_Restored_Type"})
     update_message: str = field(default=None, metadata={"var": "Sonarr_Update_Message"})
-    update_prev_vers: str = field(default=None, metadata={"var": "Sonarr_Update_PreviousVersion"})
-    update_new_vers: str = field(default=None, metadata={"var": "Sonarr_Update_NewVersion"})
+    raw_vars: dict = field(default=None, repr=False)
 
     @classmethod
     def _parse_bool(cls, value: str) -> bool:
@@ -85,19 +79,12 @@ class SonarrEnvironment:
 
     def __post_init__(self) -> None:
         # Get environment variables
-        log = logging.getLogger("Environment Parser")
-        env_vars = {k.lower().strip(): v for k, v in environ.items() if k.lower().startswith("sonarr")}
-
-        # Debug environment
-        log.debug("========== Parsed Environment ==========")
-        for k, v in env_vars.items():
-            log.debug("%s = %s", k, v)
-        log.debug("========== Parsed Environment ==========")
+        self.raw_vars = {k.lower().strip(): v for k, v in environ.items() if k.lower().startswith("sonarr")}
 
         # Loop through dataclass fields
         for attr in fields(self):
             var_name = attr.metadata.get("var")
-            value = env_vars.get(var_name.lower())
+            value = self.raw_vars.get(var_name.lower())
             if not value:
                 continue
 
