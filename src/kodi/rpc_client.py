@@ -35,7 +35,7 @@ class KodiRPC:
     HEADERS = {"Content-Type": "application/json", "Accept": "plain/text"}
 
     def __init__(self, cfg: HostConfig) -> None:
-        self.log = logging.getLogger(f"RPC_Client.{cfg.name}")
+        self.log = logging.getLogger(f"Kodi.{cfg.name}")
         self.base_url = f"http://{cfg.ip_addr}:{cfg.port}/jsonrpc"
         self.name = cfg.name
         self.credentials = cfg.credentials
