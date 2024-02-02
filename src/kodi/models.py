@@ -62,57 +62,12 @@ class Notification:
 
 
 @dataclass
-class KodiResponseError:
-    """Error Response"""
-
-    code: int = field(default=None)
-    message: str = field(default=None)
-    method: str = field(default=None)
-    stack_name: str = field(default=None)
-    stack_type: str = field(default=None)
-    stack_message: str = field(default=None)
-    stack_property_message: str = field(default=None)
-    stack_property_type: str = field(default=None)
-    timed_out: bool = field(default=False)
-    http_error: str | None = field(default=None)
-    connection_error: str | None = field(default=None)
-
-    def __str__(self) -> str:
-        """Print the error"""
-        return f"{self.method} {self.stack_message}, {self.stack_property_message}, {self.stack_name} CODE: {self.code}"
-
-
-@dataclass
 class KodiResponse:
     """Kodi JSON-RPC Response Model"""
 
     req_id: int
     jsonrpc: str
     result: Optional[dict] | None = field(default=None)
-    error: Optional[KodiResponseError] | None = field(default=None)
-
-    def is_valid(self, expected_str: str = None) -> bool:
-        """Check validity of response"""
-        # If an error or no result was found
-        if self.error is not None or self.result is None:
-            return False
-
-        # Check for list typed responses:
-        if isinstance(self.result, list):
-            return len(self.result) > 0
-
-        # Check for string typed responses
-        if isinstance(self.result, str):
-            return self.result == expected_str
-
-        # Check for dict typed responses
-        if isinstance(self.result, dict):
-            if expected_str:
-                return expected_str in self.result
-            return len(self.result.keys()) > 0
-
-        # Unsupported response type
-        return False
 
 
 @dataclass

@@ -7,7 +7,6 @@ from time import sleep
 from dataclasses import asdict
 from .rpc_client import KodiRPC
 from .config import HostConfig, PathMapping
-from .exceptions import APIError, ScanTimeout
 from .models import EpisodeDetails, StoppedEpisode, ShowDetails, Notification
 
 
@@ -79,11 +78,10 @@ class LibraryManager:
         """
         self.log.info("Getting all episodes. This may take a moment.")
         for host in self.hosts:
-            try:
-                return host.get_all_episodes()
-            except APIError:
-                self.log.warning("%s Failed to get all episodes.", host.name)
-                continue
+            episodes = host.get_all_episodes()
+            if episodes:
+                return episodes
+
         return []
 
     # -------------- GUI Methods -------------------
@@ -192,13 +190,9 @@ class LibraryManager:
                     continue
 
                 # Scan the directory
-                try:
-                    host.scan_series_dir(show_dir)
+                if host.scan_series_dir(show_dir):
                     scanned = True
                     break
-                except (APIError, ScanTimeout) as e:
-                    self.log.warning("Failed to scan. Skipping this host. Error: %s", e)
-                    continue
 
             # Wait 5 seconds before trying all hosts again
             if not scanned:
@@ -225,14 +219,10 @@ class LibraryManager:
                     self.log.info("Skipping active player %s", host.name)
                     continue
 
-                # Scan the directory
-                try:
-                    host.full_video_scan()
+                # Scan the library
+                if host.full_video_scan():
                     scanned = True
                     break
-                except (APIError, ScanTimeout) as e:
-                    self.log.warning("Failed to scan. Skipping this host. Error: %s", e)
-                    continue
 
             # Wait 5 seconds before trying all hosts again
             if not scanned:
@@ -248,8 +238,7 @@ class LibraryManager:
         """Clean Library and wait for completion"""
 
         # Clean library
-        cleaned = False
-        while not cleaned:
+        while True:
             for host in self.hosts:
                 # Optionally, skip active hosts
                 if skip_active and host.is_playing:
@@ -257,38 +246,28 @@ class LibraryManager:
                     continue
 
                 # Clean video library
-                try:
-                    host.clean_video_library(series_dir)
-                    cleaned = True
-                    break
-                except APIError as e:
-                    self.log.warning(e)
-                    continue
+                if host.clean_video_library(series_dir):
+                    return
 
             # Wait 5 seconds before trying all hosts again
-            if not cleaned:
-                sleep(5)
+            sleep(5)
 
     # -------------- Episode Methods --------------
-    def get_episodes_by_dir(self, show_dir) -> list[EpisodeDetails]:
+    def get_episodes_by_dir(self, show_dir: str) -> list[EpisodeDetails]:
         """Get all episodes contained in a directory"""
         for host in self.hosts:
-            try:
-                return host.get_episodes_from_dir(show_dir)
-            except APIError as e:
-                self.log.warning("Failed to get episodes by directory %s. Trying next host. Error: %s", show_dir, e)
-                continue
+            episodes = host.get_episodes_from_dir(show_dir)
+            if episodes:
+                return episodes
 
         return []
 
     def get_episodes_by_file(self, episode_path: str) -> list[EpisodeDetails]:
         """Get episode data for each episode file"""
         for host in self.hosts:
-            try:
-                return host.get_episodes_from_file(episode_path)
-            except APIError as e:
-                self.log.warning("Failed to get episodes by file %s. Trying next host. Error: %s", episode_path, e)
-                continue
+            episodes = host.get_episodes_from_file(episode_path)
+            if episodes:
+                return episodes
 
         return []
 
@@ -296,37 +275,19 @@ class LibraryManager:
         """Remove episode from library, return true if success"""
         self.log.info("Removing episode %s", episode)
         for host in self.hosts:
-            try:
-                host.remove_episode(episode.episode_id)
-            except APIError:
-                self.log.warning("%s Failed to remove %s", host.name, episode)
-                continue
-            return True
+            if host.remove_episode(episode.episode_id):
+                return True
 
         return False
 
-    def copy_ep_metadata(self, old_eps: list[EpisodeDetails], new_eps: list[EpisodeDetails]) -> list[EpisodeDetails]:
-        """Copy watched states and date added from old episodes to their matching new entires"""
-        # Return if both lists are empty
-        if not old_eps or not new_eps:
-            return []
-
-        edited_episodes = set()
+    def copy_ep_metadata(self, old_ep: EpisodeDetails, new_ep: EpisodeDetails) -> bool:
+        """Copy watched state and date added from old episode to its matching new entry"""
         for host in self.hosts:
-            for old_ep in old_eps:
-                for new_ep in new_eps:
-                    if old_ep == new_ep:
-                        self.log.info("Applying metadata to new episode : %s", new_ep)
-                        try:
-                            host.set_episode_watched_state(old_ep, new_ep.episode_id)
-                            edited_episodes.add(host.get_episode_from_id(new_ep.episode_id))
-                        except APIError:
-                            self.log.warning("%s Failed to set episode metadata.", host.name)
-                            continue
-            if len(edited_episodes) == len(new_eps):
-                break
+            self.log.info("Applying metadata to new episode : %s", new_ep)
+            if host.set_episode_watched_state(old_ep, new_ep.episode_id):
+                return True
 
-        return edited_episodes
+        return False
 
     # -------------- Show Methods --------------
     def remove_show(self, series_path: str) -> list[ShowDetails]:
@@ -337,36 +298,43 @@ class LibraryManager:
 
         # Get current shows in series_path
         self.log.info("Removing tvshows within %s", series_path)
-        for host in self.hosts:
-            try:
-                shows = host.get_shows_from_dir(series_path)
-            except APIError:
-                self.log.warning("Failed to get shows in %s", series_path)
-                continue
-            break
+        for show in self.get_shows_from_dir(series_path):
+            shows.add(show)
 
         # Exit early if no shows to remove
         if not shows:
             self.log.warning("No shows found within %s", series_path)
             return []
 
-        for host in self.hosts:
-            for show in shows:
-                try:
-                    removed_shows.add(host.remove_tvshow(show.show_id))
-                except APIError:
-                    self.log.warning("Failed to remove TV Show %s", show)
-                    continue
-            break
+        # Try up to 3 times
+        for _ in range(3):
+            for host in self.hosts:
+                for show in [x for x in shows if x not in removed_shows]:
+                    if host.remove_tvshow(show.show_id):
+                        removed_shows.add(show)
 
+                if len(shows) == len(removed_shows):
+                    return removed_shows
+
+        remaining_shows = [x for x in shows if x not in removed_shows]
+        self.log.warning("Failed to remove shows after 3 attempts. %s", remaining_shows)
         return removed_shows
+
+    def get_shows_from_dir(self, directory: str) -> list[ShowDetails]:
+        """Get shows from directory"""
+        for host in self.hosts:
+            shows = host.get_shows_from_dir(directory)
+            if shows:
+                return shows
+
+        return []
 
     def show_exists(self, series_path: str) -> list[ShowDetails]:
         """Check if a show exists, return list of shows with series_path"""
         self.log.debug("Checking for existing show in %s", series_path)
         for host in self.hosts:
-            try:
-                return host.get_shows_from_dir(series_path)
-            except APIError:
-                continue
+            shows = host.get_shows_from_dir(series_path)
+            if shows:
+                return shows
+
         return []

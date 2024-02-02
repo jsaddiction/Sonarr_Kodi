@@ -149,7 +149,10 @@ class EventHandler:
             self.kodi.clean_library()
 
         # reapply metadata from old library entries
-        self.kodi.copy_ep_metadata(removed_episodes, new_episodes)
+        for removed_episode in removed_episodes:
+            for new_episode in new_episodes:
+                if removed_episode == new_episode:
+                    self.kodi.copy_ep_metadata(removed_episode, new_episode)
 
         # update remaining guis
         self.kodi.update_guis()
@@ -212,7 +215,10 @@ class EventHandler:
             self.kodi.clean_library()
 
         # Reapply metadata
-        self.kodi.copy_ep_metadata(removed_episodes, new_episodes)
+        for removed_episode in removed_episodes:
+            for new_episode in new_episodes:
+                if removed_episode == new_episode:
+                    self.kodi.copy_ep_metadata(removed_episode, new_episode)
 
         # Update GUIs
         self.kodi.update_guis()
