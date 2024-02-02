@@ -84,6 +84,9 @@ class SonarrEnvironment:
         # Loop through dataclass fields
         for attr in fields(self):
             var_name = attr.metadata.get("var")
+            if not var_name:
+                continue
+
             value = self.raw_vars.get(var_name.lower())
             if not value:
                 continue
