@@ -47,7 +47,7 @@ class KodiRPC:
         self.platform: Platform = None
 
     def __str__(self) -> str:
-        return f"{self.name} JSON-RPC Version: {self.rpc_version}"
+        return f"{self.name} JSON-RPC({self.rpc_version})"
 
     @property
     def rpc_version(self) -> RPCVersion:
