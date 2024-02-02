@@ -55,7 +55,7 @@ class Notification:
     title: str
     msg: str
     display_time: int = field(default=5000)
-    image: str = field(default="https://github.com/jsaddiction/Sonarr_Kodi/raw/main/img/Sonarr.png")
+    image: str = field(default="https://github.com/jsaddiction/Sonarr_Kodi/raw/main/img/sonarr.png")
 
     def __str__(self) -> str:
         return f"TITLE='{self.title}' MSG='{self.msg}'"
