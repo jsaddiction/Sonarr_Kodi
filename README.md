@@ -4,9 +4,9 @@
 
 This script will help maintain your library if all of the following are true:
 
-- Operate at least one Kodi instance
-- Do all instances share a Mariadb or Mysql database
-- Content is added with Sonarr?
+- At least one Kodi instance
+- All instances share a Mariadb or Mysql database (only required if more than one instance)
+- Content is added with Sonarr
 
 ---
 
@@ -51,6 +51,7 @@ This script is designed to intelligently manage these shortcomings with shared l
 - Writes WARNING level logs to stderr so Sonarr can display them in the events tab
 - All log entries at or above the level configured are written similar to the Sonarr.txt logs
 - Install script does all the hard work in Sonarr to configure the correct "connect" fields
+- Actions in Sonarr propagate to Kodi library such as renames, deletes, upgrades
 
 ---
 
