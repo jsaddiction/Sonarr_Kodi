@@ -1,4 +1,5 @@
 """Sonarr_Kodi Event handler"""
+
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -18,9 +19,17 @@ class EventHandler:
         self.log = logging.getLogger("EventHandler")
 
     # ------------- Helpers --------------------
-    def _wait_for_nfos(self, nfos: list[Path]) -> None:
-        """Wait for all files in nfos list to be present before proceeding"""
-        max_sec = (self.cfg.library.nfo_timeout_minuets * len(nfos)) * 60
+    def _wait_for_nfos(self, nfos: list[Path], timeout_min: int) -> None:
+        """Wait for all files provided to be present in the file system.
+
+        Args:
+            nfos (list[Path]): List of path objects to check
+            timeout_min (int): Number of minuets to wait per file.
+
+        Raises:
+            NFOTimeout: Contains the elapsed time and missing filenames if timeout_min * len(nfos) exceeded
+        """
+        max_sec = (timeout_min * len(nfos)) * 60
         self.log.info("Waiting up to %s minuets for %s NFO Files.", max_sec / 60, len(nfos))
 
         files_found = set()
@@ -70,7 +79,7 @@ class EventHandler:
             ep_nfo = Path(self.env.episode_file_path).with_suffix(".nfo")
             show_nfo = Path(self.env.series_path).joinpath("tvshow.nfo")
             try:
-                self._wait_for_nfos([ep_nfo, show_nfo])
+                self._wait_for_nfos([ep_nfo, show_nfo], self.cfg.library.nfo_timeout_minuets)
             except NFOTimeout as e:
                 self.log.critical("Failed to find NFOs. %s", e)
                 return
@@ -128,7 +137,7 @@ class EventHandler:
             ep_nfo = Path(self.env.episode_file_path).with_suffix(".nfo")
             show_nfo = Path(self.env.series_path).joinpath("tvshow.nfo")
             try:
-                self._wait_for_nfos([ep_nfo, show_nfo])
+                self._wait_for_nfos([ep_nfo, show_nfo], self.cfg.library.nfo_timeout_minuets)
             except NFOTimeout as e:
                 self.log.critical("Failed to find NFOs. %s", e)
                 return
@@ -193,7 +202,7 @@ class EventHandler:
             nfos = [x.with_suffix(".nfo") for x in new_files]
             nfos.append(Path(self.env.series_path, "tvshow.nfo"))
             try:
-                self._wait_for_nfos(nfos)
+                self._wait_for_nfos(nfos, self.cfg.library.nfo_timeout_minuets)
             except NFOTimeout as e:
                 self.log.critical("Failed to find NFOs. %s", e)
                 return

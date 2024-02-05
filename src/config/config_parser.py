@@ -55,7 +55,17 @@ class ConfigParser:
 
     @classmethod
     def _validate_config(cls, config: dict, schema: dict, path: list[str] = None) -> None:
-        """Validate Config dict"""
+        """Validate config based on a schema. This method is called recursively
+        validating each part of the config against the schema.
+
+        Args:
+            config (dict): The config parsed from yaml as a dict
+            schema (dict): The schema to validate against
+            path (list[str], optional): Not used upon initial call. Defaults to None.
+
+        Raises:
+            ConfigError: Indicating the issue and location
+        """
         if path is None:
             path = []
         for key, expected_type in schema.items():
@@ -111,14 +121,28 @@ class ConfigParser:
                         )
 
     def is_default(self, config: Config) -> bool:
-        """Determine if Config dataclass matches default config"""
+        """Checks if a config object is the default.
+
+        Args:
+            config (Config): Object previously parsed by get_config
+
+        Returns:
+            bool: True if the provided config is the default
+        """
         default_cfg_path = Path(__file__).with_name("default_config.yaml")
         default_cfg = self.get_config(default_cfg_path)
 
         return default_cfg == config
 
     def get_config(self, config_path: Path) -> Config:
-        """Read config and return Config dataclass"""
+        """Parse and validate a config file at the provided path.
+
+        Args:
+            config_path (Path): Path to a config file in yaml format
+
+        Returns:
+            Config: Object containing all user settings
+        """
         try:
             with open(config_path, mode="r", encoding="utf8") as file:
                 cfg = yaml.safe_load(file.read())

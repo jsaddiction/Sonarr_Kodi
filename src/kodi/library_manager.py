@@ -51,7 +51,11 @@ class LibraryManager:
 
     # -------------- Helpers -----------------------
     def _serialize(self, stopped_eps: list[StoppedEpisode]) -> None:
-        """Serialize and store list of stopped episodes"""
+        """Serialize and store list of stopped episodes
+
+        Args:
+            stopped_eps (list[StoppedEpisode]): Objects containing details of stopped library items
+        """
         self.log.debug("Storing stopped episodes. %s", stopped_eps)
         try:
             with self.PICKLE_PATH.open(mode="wb") as file:
@@ -60,7 +64,11 @@ class LibraryManager:
             self.log.warning("Failed to store stopped episodes. Error: %s", e)
 
     def _deserialize(self) -> list[StoppedEpisode]:
-        """Deserialize previously recorded data for replaying stopped episodes"""
+        """Deserialize previously stored, stopped episodes. Deletes persistent storage once complete.
+
+        Returns:
+            list[StoppedEpisode]: Objects containing details of stopped library items
+        """
         self.log.debug("Reading stopped episodes file.")
         try:
             with self.PICKLE_PATH.open(mode="rb") as file:
@@ -73,9 +81,7 @@ class LibraryManager:
         return data
 
     def _get_all_episodes(self) -> list[EpisodeDetails]:
-        """Get all episodes from library
-        This is Library expensive operation
-        """
+        """Get all episodes from library. This is a SQL expensive operation"""
         self.log.info("Getting all episodes. This may take a moment.")
         for host in self.hosts:
             episodes = host.get_all_episodes()
@@ -91,14 +97,20 @@ class LibraryManager:
             host.update_gui()
 
     def notify(self, notification: Notification) -> None:
-        """Send notification to all enabled hosts if"""
+        """Send notification to all enabled hosts"""
 
         for host in self.hosts:
             host.notify(notification)
 
     # -------------- Player Methods ----------------
     def stop_playback(self, episode: EpisodeDetails, reason: str, store_result: bool = True) -> None:
-        """Stop playback of an episode on any host"""
+        """Stop playback of a given episode on any host
+
+        Args:
+            episode (EpisodeDetails): The episode to stop
+            reason (str): Short description of why it was stopped. Used with notifications.
+            store_result (bool, optional): True when the intent is to restart later. Defaults to True.
+        """
         title = "Sonarr - Stopped Playback"
         stopped_episodes: list[StoppedEpisode] = []
 
@@ -143,7 +155,11 @@ class LibraryManager:
                 host.notify(Notification(title=title, msg=reason), force=True)
 
     def start_playback(self, episode: EpisodeDetails) -> None:
-        """Resume playback of a previously stopped episode"""
+        """Start playback of a given episode that was previously stopped and results were stored.
+
+        Args:
+            episode (EpisodeDetails): The episode to start.
+        """
         # Do not attempt if nothing was previously stored
         if not self.PICKLE_PATH.exists():
             return
@@ -170,11 +186,14 @@ class LibraryManager:
 
     # -------------- Library Scanning --------------
     def scan_directory(self, show_dir: str, skip_active: bool = False) -> list[EpisodeDetails]:
-        """Scan show directory, optionally skipping any active devices
+        """Scan a given directory by the first available host.
+
+        Args:
+            show_dir (str): The directory to scan
+            skip_active (bool, optional): True if active hosts should be skipped. Defaults to False.
 
         Returns:
-            Empty list: If new episodes not found
-            List[EpisodeDetails]: If new episodes were found
+            list[EpisodeDetails]: New episodes that were added to the library.
         """
 
         # Get current episodes
@@ -204,8 +223,13 @@ class LibraryManager:
         return [x for x in episodes_after_scan if x not in episodes_before_scan]
 
     def full_scan(self, skip_active: bool = False) -> list[EpisodeDetails]:
-        """Scan entire video library and return newly added episodes
-        This is an IO and library expensive operation.
+        """Conduct a full library scan. This is SQL and Filesystem expensive.
+
+        Args:
+            skip_active (bool, optional): True if active hosts should be skipped. Defaults to False.
+
+        Returns:
+            list[EpisodeDetails]: New episodes that were added to the library.
         """
         # Get episodes before scan
         episodes_before_scan = self._get_all_episodes()
@@ -235,7 +259,12 @@ class LibraryManager:
         return [x for x in episodes_after_scan if x not in episodes_before_scan]
 
     def clean_library(self, skip_active: bool = False, series_dir: str = None) -> None:
-        """Clean Library and wait for completion"""
+        """Clean the video library. Potentially a blocking method if no hosts successfully ever clean.
+
+        Args:
+            skip_active (bool, optional): True if active players should be skipped. Defaults to False.
+            series_dir (str, optional): Directory to clean. Defaults to None.
+        """
 
         # Clean library
         while True:
@@ -254,7 +283,14 @@ class LibraryManager:
 
     # -------------- Episode Methods --------------
     def get_episodes_by_dir(self, show_dir: str) -> list[EpisodeDetails]:
-        """Get all episodes contained in a directory"""
+        """Get all episodes that reside in a specific directory
+
+        Args:
+            show_dir (str): the directory to filter on.
+
+        Returns:
+            list[EpisodeDetails]: Episodes gathered from the library.
+        """
         for host in self.hosts:
             episodes = host.get_episodes_from_dir(show_dir)
             if episodes:
@@ -263,7 +299,14 @@ class LibraryManager:
         return []
 
     def get_episodes_by_file(self, episode_path: str) -> list[EpisodeDetails]:
-        """Get episode data for each episode file"""
+        """Get all episodes that reside in a specific file
+
+        Args:
+            episode_path (str): the file to filter on.
+
+        Returns:
+            list[EpisodeDetails]: Episodes gathered from the library.
+        """
         for host in self.hosts:
             episodes = host.get_episodes_from_file(episode_path)
             if episodes:
@@ -272,7 +315,14 @@ class LibraryManager:
         return []
 
     def remove_episode(self, episode: EpisodeDetails) -> bool:
-        """Remove episode from library, return true if success"""
+        """Remove an episode from the library
+
+        Args:
+            episode (EpisodeDetails): The episode to remove
+
+        Returns:
+            bool: True if the episode was removed
+        """
         self.log.info("Removing episode %s", episode)
         for host in self.hosts:
             if host.remove_episode(episode.episode_id):
@@ -281,7 +331,15 @@ class LibraryManager:
         return False
 
     def copy_ep_metadata(self, old_ep: EpisodeDetails, new_ep: EpisodeDetails) -> bool:
-        """Copy watched state and date added from old episode to its matching new entry"""
+        """Copy metadata from old episode to new episode
+
+        Args:
+            old_ep (EpisodeDetails): The episode to copy metadata from
+            new_ep (EpisodeDetails): The episode to copy metadata to
+
+        Returns:
+            bool: True if the metadata was copied
+        """
         for host in self.hosts:
             self.log.info("Applying metadata to new episode : %s", new_ep)
             if host.set_episode_watched_state(old_ep, new_ep.episode_id):
@@ -291,7 +349,14 @@ class LibraryManager:
 
     # -------------- Show Methods --------------
     def remove_show(self, series_path: str) -> list[ShowDetails]:
-        """Remove show from library"""
+        """Remove a show from the library
+
+        Args:
+            series_path (str): The directory containing the show to remove
+
+        Returns:
+            list[ShowDetails]: Shows that were removed
+        """
         # Remove all TV Shows within the series path
         shows: set[ShowDetails] = set()
         removed_shows: set[ShowDetails] = set()
@@ -321,7 +386,14 @@ class LibraryManager:
         return removed_shows
 
     def get_shows_from_dir(self, directory: str) -> list[ShowDetails]:
-        """Get shows from directory"""
+        """Get all shows that reside in a specific directory
+
+        Args:
+            directory (str): the directory to filter on.
+
+        Returns:
+            list[ShowDetails]: Shows gathered from the library.
+        """
         for host in self.hosts:
             shows = host.get_shows_from_dir(directory)
             if shows:
@@ -330,7 +402,14 @@ class LibraryManager:
         return []
 
     def show_exists(self, series_path: str) -> list[ShowDetails]:
-        """Check if a show exists, return list of shows with series_path"""
+        """Check if a directory contains a show
+
+        Args:
+            series_path (str): The directory to check
+
+        Returns:
+            list[ShowDetails]: Shows that were found
+        """
         self.log.debug("Checking for existing show in %s", series_path)
         for host in self.hosts:
             shows = host.get_shows_from_dir(series_path)
