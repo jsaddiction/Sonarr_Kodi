@@ -20,24 +20,19 @@ class LibraryManager:
 
     def __init__(self, host_configs: list[HostConfig], path_maps: list[PathMapping]) -> None:
         self.log = logging.getLogger("Kodi-Library-Manager")
-        self.hosts: list[KodiRPC] = []
-
         self.log.debug("Building list of Kodi Hosts")
-        for cfg in host_configs:
-            if not cfg.enabled:
-                self.log.debug("Skipping disabled host: %s", cfg.name)
-                continue
+        self.hosts: list[KodiRPC] = [self._create_host(cfg, path_maps) for cfg in host_configs if cfg.enabled]
 
-            # Create RPC Host
-            host_cfg = HostConfig(**asdict(cfg))
-            host_cfg.path_maps = path_maps
-            host = KodiRPC(host_cfg)
-
-            # Test and store host
-            self.log.debug("Testing connection with %s", cfg.name)
-            if host.is_alive:
-                self.log.info("Connection established with: %s", host)
-                self.hosts.append(host)
+    def _create_host(self, cfg: HostConfig, path_maps: list[PathMapping]) -> KodiRPC:
+        """Create a new KodiRPC instance and test connection"""
+        host_cfg = HostConfig(**asdict(cfg))
+        host_cfg.path_maps = path_maps
+        host = KodiRPC(host_cfg)
+        self.log.debug("Testing connection with %s", cfg.name)
+        if host.is_alive:
+            self.log.info("Connection established with: %s", host)
+            return host
+        return None
 
     @property
     def hosts_not_scanned(self) -> list[KodiRPC]:

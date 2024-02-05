@@ -1,6 +1,5 @@
 """Kodi JSON-RPC Interface"""
 
-# import os
 import json
 import logging
 from datetime import datetime, timedelta
@@ -167,6 +166,7 @@ class KodiRPC:
         for path_map in self.path_maps:
             if path_map.sonarr in path:
                 out_str = path.replace(path_map.sonarr, path_map.kodi)
+                break
 
         if self.is_posix:
             return str(PurePosixPath(out_str))
