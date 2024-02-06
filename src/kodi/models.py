@@ -88,7 +88,7 @@ class PlayerItem:
     type: str
 
 
-@dataclass
+@dataclass(slots=True)
 class ResumeState:
     """Resume Point of a Media Item"""
 
@@ -107,7 +107,7 @@ class ResumeState:
         return f"Resume {self.percent:.2f}% Complete."
 
 
-@dataclass
+@dataclass(slots=True)
 class WatchedState:
     """Watched State of a Media Item"""
 
@@ -157,7 +157,7 @@ class ShowDetails:
         return f"{self.title} ({self.year})"
 
 
-@dataclass(frozen=True, order=False, eq=True)
+@dataclass(frozen=True, order=False, eq=True, slots=True)
 class EpisodeDetails:
     """Details of an episode"""
 
