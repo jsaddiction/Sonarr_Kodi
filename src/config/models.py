@@ -2,9 +2,8 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Type, Self
+from typing import Any, Type, Self, Tuple
 from enum import Enum
-from src.kodi.config import HostConfig
 
 log = logging.getLogger("Config Parser")
 
@@ -94,6 +93,40 @@ class Notifications:
     on_application_update: bool
     on_manual_interaction_required: bool
     on_test: bool
+
+
+@dataclass
+class HostConfig:
+    """Kodi Host Config"""
+
+    name: str
+    ip_addr: str
+    port: int
+    user: str
+    password: str
+    enabled: bool
+    disable_notifications: bool
+    priority: int
+    path_maps: list[PathMapping] = field(default_factory=list)
+
+    @property
+    def credentials(self) -> Tuple[str, str]:
+        """Tuple of credentials"""
+        return (self.user, self.password)
+
+    @classmethod
+    def from_dict(cls: Type["HostConfig"], data: dict) -> Self:
+        """Get Instance from dict values"""
+        return cls(
+            name=data["name"],
+            ip_addr=data["ip_addr"],
+            port=data["port"],
+            user=data["user"],
+            password=data["password"],
+            enabled=data["enabled"],
+            disable_notifications=data["disable_notifications"],
+            priority=data["priority"],
+        )
 
 
 @dataclass

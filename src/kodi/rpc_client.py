@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from pathlib import PurePosixPath, PureWindowsPath
 import requests
 
-from .config import HostConfig
+# from .config import HostConfig
 from .exceptions import APIError, ScanTimeout
 from .models import (
     RPCVersion,
@@ -32,19 +32,31 @@ class KodiRPC:
     TIMEOUT = 5
     HEADERS = {"Content-Type": "application/json", "Accept": "plain/text"}
 
-    def __init__(self, cfg: HostConfig) -> None:
-        self.log = logging.getLogger(f"Kodi.{cfg.name}")
-        self.base_url = f"http://{cfg.ip_addr}:{cfg.port}/jsonrpc"
-        self.name = cfg.name
-        self.disable_notifications = cfg.disable_notifications
-        self.priority = cfg.priority
-        self.path_maps = cfg.path_maps
+    # def __init__(self, cfg: HostConfig) -> None:
+    def __init__(
+        self,
+        name: str,
+        ip_addr: str,
+        port: int = 8080,
+        user: str = None,
+        password: str = None,
+        disable_notifications: bool = False,
+        priority: int = 0,
+        path_maps: list[dict] = None,
+    ) -> None:
+        self.log = logging.getLogger(f"Kodi.{name}")
+        self.base_url = f"http://{ip_addr}:{port}/jsonrpc"
+        self.name = name
+        self.disable_notifications = disable_notifications
+        self.priority = priority
+        self.path_maps = path_maps
         self.library_scanned = False
         self._platform: Platform = None
 
         # Establish session
         self.session = requests.Session()
-        self.session.auth = cfg.credentials if cfg.credentials else None
+        if user and password:
+            self.session.auth = (user, password)
         self.session.headers.update(self.HEADERS)
         self.req_id = 0
 
@@ -190,9 +202,9 @@ class KodiRPC:
     def _map_path(self, path: str) -> str:
         """Map path from Sonarr to Kodi path using path_maps"""
         out_str = path
-        for path_map in self.path_maps:
-            if path_map.sonarr in path:
-                out_str = path.replace(path_map.sonarr, path_map.kodi)
+        for k, v in self.path_maps.items():
+            if k in path:
+                out_str = path.replace(k, v)
                 break
 
         if self.is_posix:
