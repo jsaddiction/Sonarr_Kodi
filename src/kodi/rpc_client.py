@@ -38,15 +38,37 @@ class KodiRPC:
         self.base_url = f"http://{cfg.ip_addr}:{cfg.port}/jsonrpc"
         self.name = cfg.name
         self.credentials = cfg.credentials
-        self.enabled = cfg.enabled
         self.disable_notifications = cfg.disable_notifications
         self.priority = cfg.priority
         self.path_maps = cfg.path_maps
         self.library_scanned = False
-        self.platform: Platform = None
+        self._platform: Platform = None
 
     def __str__(self) -> str:
         return f"{self.name} JSON-RPC({self.rpc_version})"
+
+    @property
+    def platform(self) -> Platform:
+        """Get platform of this client"""
+        if self._platform:
+            return self._platform
+
+        params = {"booleans": [x.value for x in Platform]}
+        try:
+            resp = self._req("XBMC.GetInfoBooleans", params=params)
+        except APIError as e:
+            self.log.warning("Failed to get platform info. Error: %s", e)
+            self._platform = Platform.UNKNOWN
+            return self._platform
+
+        # Check all platform booleans and return the first one that is True
+        for k, v in resp.result.items():
+            if v:
+                return Platform(k)
+
+        # Return unknown if no platform booleans are True
+        self._platform = Platform.UNKNOWN
+        return self._platform
 
     @property
     def rpc_version(self) -> RPCVersion | None:
@@ -240,27 +262,6 @@ class KodiRPC:
             jsonrpc=response.get("jsonrpc"),
             result=response.get("result"),
         )
-
-    # --------------- System Methods -----------------
-    def get_platform(self) -> Platform:
-        """Get platform of this client"""
-        if self.platform:
-            return self.platform
-
-        params = {"booleans": [x.value for x in Platform]}
-        try:
-            resp = self._req("XBMC.GetInfoBooleans", params=params)
-        except APIError as e:
-            self.log.warning("Failed to get platform info. Error: %s", e)
-            return Platform.UNKNOWN
-
-        # Check all platform booleans and return the first one that is True
-        for k, v in resp.result.items():
-            if v:
-                return Platform(k)
-
-        # Return unknown if no platform booleans are True
-        return Platform.UNKNOWN
 
     # --------------- UI Methods ---------------------
     def update_gui(self) -> None:
