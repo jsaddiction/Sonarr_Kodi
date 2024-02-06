@@ -4,11 +4,7 @@
 import logging
 import sys
 from pathlib import Path
-from src import config_log
-from src.config import ConfigParser
-from src.kodi import LibraryManager
-from src.environment import ENV, Events
-from src.event_handler import EventHandler
+from src import ConfigParser, LibraryManager, EventHandler, ENV, Events, config_log
 
 APP_DIR = Path(__file__).resolve().parent
 CONFIG_PATH = APP_DIR / "settings.yaml"
