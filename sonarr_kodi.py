@@ -32,8 +32,9 @@ def main() -> None:
         log.debug("%s = %s", k, v)
     log.debug("========== Environment ==========")
 
-    if len(kodi.hosts) == 0:
+    if not kodi.hosts:
         log.critical("Unable to modify library. No active Kodi Hosts.")
+        kodi.dispose_hosts()
         return
 
     match ENV.event_type:
@@ -64,9 +65,12 @@ def main() -> None:
             event_handler.test()
         case _:
             log.critical("Event type was unknown or could not be parsed. Exiting")
+            kodi.dispose_hosts()
             sys.exit(1)
 
     log.info("Processing Complete")
+    kodi.dispose_hosts()
+    sys.exit(0)
 
 
 if __name__ == "__main__":

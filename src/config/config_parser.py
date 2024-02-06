@@ -1,6 +1,5 @@
 """Sonarr Kodi Configuration Manager"""
 
-import sys
 import ipaddress
 from pathlib import Path
 import yaml
@@ -147,16 +146,13 @@ class ConfigParser:
             with open(config_path, mode="r", encoding="utf8") as file:
                 cfg = yaml.safe_load(file.read())
         except FileNotFoundError as e:
-            print(f"Config file not found at '{config_path}' Error: {e}", file=sys.stderr)
-            sys.exit(1)
+            raise ConfigError(f"Config file not found at '{config_path}'") from e
         except OSError as e:
-            print(f"Failed to read config file. Error: {e}", file=sys.stderr)
-            sys.exit(1)
+            raise ConfigError(f"Failed to read config file. Error: {e}") from e
 
         try:
             self._validate_config(cfg, CONFIG_SCHEMA)
         except ConfigError as e:
-            print(f"Invalid Config file. {e}", file=sys.stderr)
-            sys.exit(1)
+            raise ConfigError(f"Invalid Config file. Error: {e}") from e
 
         return Config.from_dict(cfg)

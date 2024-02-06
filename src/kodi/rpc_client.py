@@ -30,19 +30,23 @@ class KodiRPC:
 
     RETRIES = 3
     TIMEOUT = 5
-    REQ_ID = 0
     HEADERS = {"Content-Type": "application/json", "Accept": "plain/text"}
 
     def __init__(self, cfg: HostConfig) -> None:
         self.log = logging.getLogger(f"Kodi.{cfg.name}")
         self.base_url = f"http://{cfg.ip_addr}:{cfg.port}/jsonrpc"
         self.name = cfg.name
-        self.credentials = cfg.credentials
         self.disable_notifications = cfg.disable_notifications
         self.priority = cfg.priority
         self.path_maps = cfg.path_maps
         self.library_scanned = False
         self._platform: Platform = None
+
+        # Establish session
+        self.session = requests.Session()
+        self.session.auth = cfg.credentials if cfg.credentials else None
+        self.session.headers.update(self.HEADERS)
+        self.req_id = 0
 
     def __str__(self) -> str:
         return f"{self.name} JSON-RPC({self.rpc_version})"
@@ -229,16 +233,14 @@ class KodiRPC:
 
     def _req(self, method: str, params: dict = None, timeout: int = None) -> KodiResponse | None:
         """Send request to this Kodi Host"""
-        req_params = {"jsonrpc": "2.0", "id": self.REQ_ID, "method": method}
+        req_params = {"jsonrpc": "2.0", "id": self.req_id, "method": method}
         if params:
             req_params["params"] = params
         response = None
         try:
-            resp = requests.post(
+            resp = self.session.post(
                 url=self.base_url,
                 data=json.dumps(req_params).encode("utf-8"),
-                headers=self.HEADERS,
-                auth=self.credentials,
                 timeout=timeout or self.TIMEOUT,
             )
             resp.raise_for_status()
@@ -252,7 +254,7 @@ class KodiRPC:
         except requests.ConnectionError as e:
             raise APIError(f"Connection Error. {e}") from e
         finally:
-            KodiRPC.REQ_ID += 1
+            self.req_id += 1
 
         if "error" in response:
             raise APIError(response.get("error"))
@@ -262,6 +264,11 @@ class KodiRPC:
             jsonrpc=response.get("jsonrpc"),
             result=response.get("result"),
         )
+
+    def close_session(self) -> None:
+        """Close the session"""
+        self.log.debug("Closing session")
+        self.session.close()
 
     # --------------- UI Methods ---------------------
     def update_gui(self) -> None:

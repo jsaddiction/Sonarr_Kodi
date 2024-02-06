@@ -34,6 +34,11 @@ class LibraryManager:
             return host
         return None
 
+    def dispose_hosts(self) -> None:
+        """Close all sessions in all hosts"""
+        for host in self.hosts:
+            host.close_session()
+
     @property
     def hosts_not_scanned(self) -> list[KodiRPC]:
         """All Kodi Hosts that were not scanned"""
