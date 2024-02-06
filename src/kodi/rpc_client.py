@@ -1,5 +1,6 @@
 """Kodi JSON-RPC Interface"""
 
+import time
 import json
 import logging
 from datetime import datetime, timedelta
@@ -161,7 +162,7 @@ class KodiRPC:
 
     # --------------- Helper Methods -----------------
     def _map_path(self, path: str) -> str:
-        """Map external paths to configured kodi path"""
+        """Map path from Sonarr to Kodi path using path_maps"""
         out_str = path
         for path_map in self.path_maps:
             if path_map.sonarr in path:
@@ -197,8 +198,12 @@ class KodiRPC:
             if not self.is_scanning:
                 return elapsed
 
+            # Break out if time limit exceeded
             if elapsed.total_seconds() >= max_secs:
                 raise ScanTimeout(f"Waited for {elapsed}. Giving up.")
+
+            # Sleep for 100ms before checking again
+            time.sleep(0.1)
 
     def _req(self, method: str, params: dict = None, timeout: int = None) -> KodiResponse | None:
         """Send request to this Kodi Host"""
@@ -249,9 +254,12 @@ class KodiRPC:
             self.log.warning("Failed to get platform info. Error: %s", e)
             return Platform.UNKNOWN
 
+        # Check all platform booleans and return the first one that is True
         for k, v in resp.result.items():
             if v:
                 return Platform(k)
+
+        # Return unknown if no platform booleans are True
         return Platform.UNKNOWN
 
     # --------------- UI Methods ---------------------
@@ -266,6 +274,7 @@ class KodiRPC:
 
     def notify(self, notification: Notification, force: bool = False) -> None:
         """Send GUI Notification to Kodi Host"""
+        # Skip if notifications are disabled and not forced
         if self.disable_notifications and not force:
             self.log.debug("All Host GUI Notifications disabled. Skipping.")
             return
@@ -307,7 +316,7 @@ class KodiRPC:
             self.log.warning("Failed to get player position. Error: %s", e)
             return 0.0
 
-        return resp.result["percentage"]
+        return resp.result.get("percentage", 0.0)
 
     def get_player_item(self, player_id: int) -> PlayerItem | None:
         """Get items a given player is playing"""
@@ -327,10 +336,10 @@ class KodiRPC:
         except KeyError:
             return None
 
-    def pause_player(self, player_id: int) -> None:
+    def pause_player(self, player_id: int, max_retries: int = 3) -> None:
         """Pauses a player"""
         params = {"playerid": player_id}
-        while True:
+        for _ in range(max_retries):
             try:
                 resp = self._req("Player.PlayPause", params=params)
             except APIError as e:
@@ -339,6 +348,7 @@ class KodiRPC:
 
             if resp.result["speed"] == 0:
                 return
+        self.log.warning("Failed to pause player after %s retries", max_retries)
 
     def stop_player(self, player_id: int) -> None:
         """Stops a player"""

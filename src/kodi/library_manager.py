@@ -24,7 +24,7 @@ class LibraryManager:
         self.hosts: list[KodiRPC] = [self._create_host(cfg, path_maps) for cfg in host_configs if cfg.enabled]
 
     def _create_host(self, cfg: HostConfig, path_maps: list[PathMapping]) -> KodiRPC:
-        """Create a new KodiRPC instance and test connection"""
+        """Create a new KodiRPC instance and return it if connection is successful"""
         host_cfg = HostConfig(**asdict(cfg))
         host_cfg.path_maps = path_maps
         host = KodiRPC(host_cfg)
