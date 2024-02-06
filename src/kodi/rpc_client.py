@@ -201,7 +201,8 @@ class KodiRPC:
     def _map_path(self, path: str) -> str:
         """Map path from Sonarr to Kodi path using path_maps"""
         out_str = path
-        for k, v in self.path_maps.items():
+        for item in self.path_maps:
+            k, v = item["sonarr"], item["kodi"]
             if k in path:
                 out_str = path.replace(k, v)
                 break
