@@ -12,7 +12,6 @@ from .exceptions import APIError, ScanTimeout
 from .models import (
     RPCVersion,
     Platform,
-    Notification,
     KodiResponse,
     WatchedState,
     ResumeState,
@@ -292,7 +291,7 @@ class KodiRPC:
         except APIError as e:
             self.log.warning("Failed to update GUI. Error: %s", e)
 
-    def notify(self, notification: Notification, force: bool = False) -> None:
+    def notify(self, title: str, msg: str, force: bool = False, display_time: int = 5000) -> None:
         """Send GUI Notification to Kodi Host"""
         # Skip if notifications are disabled and not forced
         if self.disable_notifications and not force:
@@ -300,12 +299,12 @@ class KodiRPC:
             return
 
         params = {
-            "title": str(notification.title),
-            "message": str(notification.msg),
-            "displaytime": int(notification.display_time),
-            "image": notification.image,
+            "title": str(title),
+            "message": str(msg),
+            "displaytime": int(display_time),
+            "image": "https://github.com/jsaddiction/Sonarr_Kodi/raw/main/img/sonarr.png",
         }
-        self.log.info("Sending GUI Notification :: %s", notification)
+        self.log.info("Sending GUI Notification :: (title='%s', msg='%s'", title, msg)
         try:
             self._req("GUI.ShowNotification", params=params)
         except APIError as e:

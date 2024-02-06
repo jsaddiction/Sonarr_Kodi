@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from src.environment import SonarrEnvironment
 from src.config import Config
-from src.kodi import LibraryManager, Notification
+from src.kodi import LibraryManager
 from .exceptions import NFOTimeout
 
 
@@ -67,7 +67,7 @@ class EventHandler:
         title = "Sonarr - Attempting Download"
         for ep_num, ep_title in zip(self.env.release_episode_numbers, self.env.release_episode_titles):
             msg = f"{self.env.series_title} - S{self.env.release_season_number:02}E{ep_num:02} - {ep_title}"
-            self.kodi.notify(Notification(title=title, msg=msg))
+            self.kodi.notify(title=title, msg=msg)
 
     def download_new(self) -> None:
         """Downloaded a new episode"""
@@ -118,7 +118,7 @@ class EventHandler:
         # Notify clients
         title = "Sonarr - Downloaded New Episode"
         for episode in new_episodes:
-            self.kodi.notify(Notification(title=title, msg=episode))
+            self.kodi.notify(title=title, msg=episode)
 
     def download_upgrade(self) -> None:
         """Downloaded an upgraded episode file"""
@@ -178,7 +178,7 @@ class EventHandler:
         # notify clients
         title = "Sonarr - Upgraded Episode"
         for episode in new_episodes:
-            self.kodi.notify(Notification(title=title, msg=episode))
+            self.kodi.notify(title=title, msg=episode)
 
     def rename(self) -> None:
         """Renamed an episode file"""
@@ -244,7 +244,7 @@ class EventHandler:
         # Notify clients
         title = "Sonarr - Renamed Episode"
         for episode in new_episodes:
-            self.kodi.notify(Notification(title=title, msg=episode))
+            self.kodi.notify(title=title, msg=episode)
 
     def episode_delete(self) -> None:
         """Remove an episode"""
@@ -287,7 +287,7 @@ class EventHandler:
         # Notify clients
         title = "Sonarr - Deleted Episode"
         for episode in removed_episodes:
-            self.kodi.notify(Notification(title=title, msg=episode))
+            self.kodi.notify(title=title, msg=episode)
 
     def series_add(self) -> None:
         """Adding a Series"""
@@ -300,7 +300,7 @@ class EventHandler:
 
         # Notify clients
         title = "Sonarr - Series Added"
-        self.kodi.notify(Notification(title=title, msg=f"{self.env.series_title} ({self.env.series_year})"))
+        self.kodi.notify(title=title, msg=f"{self.env.series_title} ({self.env.series_year})")
 
     def series_delete(self) -> None:
         """Deleting a Series"""
@@ -334,7 +334,7 @@ class EventHandler:
 
         # Notify Clients
         title = "Sonarr Deleted Show"
-        self.kodi.notify(Notification(title=title, msg=f"{self.env.series_title} ({self.env.series_year})"))
+        self.kodi.notify(title=title, msg=f"{self.env.series_title} ({self.env.series_year})")
 
     def health_issue(self) -> None:
         """Experienced a Health Issue"""
@@ -348,7 +348,7 @@ class EventHandler:
         # Notify Clients
         title = "Sonarr - Health Issue"
         msg = self.env.health_issue_msg
-        self.kodi.notify(Notification(title=title, msg=msg))
+        self.kodi.notify(title=title, msg=msg)
 
     def health_restored(self) -> None:
         """Health Restored"""
@@ -362,7 +362,7 @@ class EventHandler:
         # Notify Clients
         title = "Sonarr - Health Restored"
         msg = f"{self.env.health_restored_msg} Resolved"
-        self.kodi.notify(Notification(title=title, msg=msg))
+        self.kodi.notify(title=title, msg=msg)
 
     def application_update(self) -> None:
         """Application Updated"""
@@ -376,7 +376,7 @@ class EventHandler:
         # Notify Clients
         title = "Sonarr - Application Update"
         msg = self.env.update_message
-        self.kodi.notify(Notification(title=title, msg=msg))
+        self.kodi.notify(title=title, msg=msg)
 
     def manual_interaction_required(self) -> None:
         """Manual Interaction Required"""
@@ -390,7 +390,7 @@ class EventHandler:
         # Notify Clients
         title = "Sonarr - Manual Interaction Required"
         msg = f"Sonarr needs help with {self.env.series_title} ({self.env.series_year})"
-        self.kodi.notify(Notification(title=title, msg=msg))
+        self.kodi.notify(title=title, msg=msg)
 
     def test(self) -> None:
         """Sonarr Tested this script"""
@@ -404,4 +404,4 @@ class EventHandler:
         # Notify Clients
         title = "Sonarr - Testing"
         msg = "Test Passed"
-        self.kodi.notify(Notification(title=title, msg=msg))
+        self.kodi.notify(title=title, msg=msg)

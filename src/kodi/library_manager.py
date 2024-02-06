@@ -7,7 +7,7 @@ from time import sleep
 from dataclasses import asdict
 from src.config.models import HostConfig, PathMapping
 from .rpc_client import KodiRPC
-from .models import EpisodeDetails, StoppedEpisode, ShowDetails, Notification
+from .models import EpisodeDetails, StoppedEpisode, ShowDetails
 
 
 class LibraryManager:
@@ -106,11 +106,11 @@ class LibraryManager:
         for host in self.hosts_not_scanned:
             host.update_gui()
 
-    def notify(self, notification: Notification) -> None:
+    def notify(self, title: str, msg: str) -> None:
         """Send notification to all enabled hosts"""
 
         for host in self.hosts:
-            host.notify(notification)
+            host.notify(title, msg)
 
     # -------------- Player Methods ----------------
     def stop_playback(self, episode: EpisodeDetails, reason: str, store_result: bool = True) -> None:
@@ -162,7 +162,7 @@ class LibraryManager:
             for stopped_ep in stopped_episodes:
                 if host.name != stopped_ep.host_name:
                     continue
-                host.notify(Notification(title=title, msg=reason), force=True)
+                host.notify(title, reason, force=True)
 
     def start_playback(self, episode: EpisodeDetails) -> None:
         """Start playback of a given episode that was previously stopped and results were stored.
