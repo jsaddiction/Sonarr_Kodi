@@ -1,11 +1,8 @@
 """Sonarr Kodi Config Models"""
 
-import logging
 from dataclasses import dataclass, field
 from typing import Any, Type, Self, Tuple
 from enum import Enum
-
-log = logging.getLogger("Config Parser")
 
 
 class LogLevels(Enum):
