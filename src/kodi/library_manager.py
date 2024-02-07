@@ -4,7 +4,6 @@ import logging
 import pickle
 from pathlib import Path
 from time import sleep
-from dataclasses import asdict
 from src.config.models import HostConfig, PathMapping
 from .rpc_client import KodiRPC
 from .models import EpisodeDetails, StoppedEpisode, ShowDetails
@@ -25,18 +24,13 @@ class LibraryManager:
 
     def _create_host(self, cfg: HostConfig, path_maps: list[PathMapping]) -> KodiRPC:
         """Create a new KodiRPC instance and return it if connection is successful"""
-        host_cfg = HostConfig(**asdict(cfg))
-        host_cfg.path_maps = []
-        for path_map in path_maps:
-            host_cfg.path_maps.append({path_map.sonarr: path_map.kodi})
-
         host = KodiRPC(
-            name=host_cfg.name,
-            ip_addr=host_cfg.ip_addr,
-            port=host_cfg.port,
-            user=host_cfg.user,
-            password=host_cfg.password,
-            path_maps=host_cfg.path_maps,
+            name=cfg.name,
+            ip_addr=cfg.ip_addr,
+            port=cfg.port,
+            user=cfg.user,
+            password=cfg.password,
+            path_maps=[{"sonarr": x.sonarr, "kodi": x.kodi} for x in path_maps],
         )
         self.log.debug("Testing connection with %s", cfg.name)
         if host.is_alive:
