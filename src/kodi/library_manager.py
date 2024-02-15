@@ -279,7 +279,7 @@ class LibraryManager:
                     continue
 
                 # Clean video library
-                if host.clean_video_library(series_dir):
+                if host.clean_video_library():
                     return
 
             # Wait 5 seconds before trying all hosts again

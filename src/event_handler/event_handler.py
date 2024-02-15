@@ -99,7 +99,7 @@ class EventHandler:
 
         # Optionally, Clean Library
         if self.cfg.library.clean_after_update:
-            self.kodi.clean_library()
+            self.kodi.clean_library(skip_active=self.cfg.library.skip_active)
 
         if not new_episodes:
             self.log.warning("No episodes were scanned into library. Exiting.")
@@ -146,7 +146,7 @@ class EventHandler:
         if not removed_episodes:
             self.log.warning("Failed to remove old episodes. Unable to persist watched states. Cleaning Required.")
             if not self.cfg.library.clean_after_update:
-                self.kodi.clean_library(skip_active=self.cfg.library.skip_active, series_dir=self.env.series_path)
+                self.kodi.clean_library(skip_active=self.cfg.library.skip_active)
 
         # Scan show directory and fall back to full scan if configured
         new_episodes = self.kodi.scan_directory(self.env.series_path, skip_active=self.cfg.library.skip_active)
@@ -155,7 +155,7 @@ class EventHandler:
 
         # Optionally, Clean Library
         if self.cfg.library.clean_after_update:
-            self.kodi.clean_library()
+            self.kodi.clean_library(skip_active=self.cfg.library.skip_active)
 
         # reapply metadata from old library entries
         for removed_episode in removed_episodes:
@@ -221,7 +221,7 @@ class EventHandler:
 
         # Optionally, Clean Library
         if self.cfg.library.clean_after_update:
-            self.kodi.clean_library()
+            self.kodi.clean_library(self.cfg.library.skip_active)
 
         # Reapply metadata
         for removed_episode in removed_episodes:
@@ -319,7 +319,7 @@ class EventHandler:
 
             # Optionally, Clean Library
             if self.cfg.library.clean_after_update:
-                self.kodi.clean_library()
+                self.kodi.clean_library(skip_active=self.cfg.library.skip_active)
 
             # Update GUIs
             self.kodi.update_guis()
