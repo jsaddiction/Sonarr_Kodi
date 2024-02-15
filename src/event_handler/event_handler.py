@@ -312,7 +312,7 @@ class EventHandler:
             episodes = self.kodi.get_episodes_by_dir(self.env.series_path)
             for ep in episodes:
                 self.kodi.stop_playback(ep, "Series deleted", False)
-                self.kodi.remove_episode(ep.episode_id)
+                self.kodi.remove_episode(ep)
 
             # Remove Show
             self.kodi.remove_show(self.env.series_path)
