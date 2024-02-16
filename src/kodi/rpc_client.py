@@ -6,8 +6,6 @@ import logging
 from datetime import datetime, timedelta
 from pathlib import PurePosixPath, PureWindowsPath
 import requests
-
-# from .config import HostConfig
 from .exceptions import APIError, ScanTimeout
 from .models import (
     RPCVersion,
@@ -31,7 +29,6 @@ class KodiRPC:
     TIMEOUT = 5
     HEADERS = {"Content-Type": "application/json", "Accept": "plain/text"}
 
-    # def __init__(self, cfg: HostConfig) -> None:
     def __init__(
         self,
         name: str,
