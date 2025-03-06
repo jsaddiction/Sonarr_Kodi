@@ -22,6 +22,10 @@ class LibraryManager:
         self.log.debug("Building list of Kodi Hosts")
         self.hosts: list[KodiRPC] = []
         for cfg in host_configs:
+            if not cfg.enabled:
+                self.log.info("Skipping disabled host %s", cfg.name)
+                continue
+
             if host := self._create_host(cfg, path_maps):
                 self.hosts.append(host)
             else:
@@ -35,6 +39,8 @@ class LibraryManager:
             port=cfg.port,
             user=cfg.user,
             password=cfg.password,
+            disable_notifications=cfg.disable_notifications,
+            priority=cfg.priority,
             path_maps=[{"sonarr": x.sonarr, "kodi": x.kodi} for x in path_maps],
         )
         self.log.debug("Testing connection with %s", cfg.name)
