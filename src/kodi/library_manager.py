@@ -373,13 +373,12 @@ class LibraryManager:
             list[ShowDetails]: Shows that were removed
         """
         # Remove all TV Shows within the series path
-        shows: set[ShowDetails] = set()
-        removed_shows: set[ShowDetails] = set()
+        shows: list[ShowDetails] = []
+        removed_shows: list[ShowDetails] = []
 
         # Get current shows in series_path
         self.log.info("Removing tvshows within %s", series_path)
-        for show in self.get_shows_from_dir(series_path):
-            shows.add(show)
+        shows = self.get_shows_from_dir(series_path)
 
         # Exit early if no shows to remove
         if not shows:
@@ -391,7 +390,7 @@ class LibraryManager:
             for host in self.hosts:
                 for show in [x for x in shows if x not in removed_shows]:
                     if host.remove_tvshow(show):
-                        removed_shows.add(show)
+                        removed_shows.append(show)
 
                 if len(shows) == len(removed_shows):
                     return removed_shows
