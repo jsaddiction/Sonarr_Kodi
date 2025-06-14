@@ -570,23 +570,20 @@ class KodiRPC:
         return True
 
     # ------------------ Show Methods ------------------
-    def remove_tvshow(self, show_id: int) -> ShowDetails | None:
+    def remove_tvshow(self, show: ShowDetails) -> ShowDetails | None:
         """Remove a TV Show from library and return it's details"""
-        show_details = self.get_show_from_id(show_id)
-        if not show_details:
-            return None
 
-        params = {"tvshowid": show_details.show_id}
-        self.log.debug("Removing TV Show with tvshowid %s", show_id)
+        params = {"tvshowid": show.show_id}
+        self.log.debug("Removing TV Show '%s'", show)
         try:
             self._req("VideoLibrary.RemoveTVShow", params=params)
         except APIError as e:
-            self.log.warning("Failed to remove tvshow by id '%s'. Error: %s", show_id, e)
+            self.log.warning("Failed to remove tvshow '%s'. Error: %s", show, e)
             return None
 
         self.library_scanned = True
 
-        return show_details
+        return show
 
     def get_shows_from_dir(self, directory: str) -> list[ShowDetails]:
         """Get list of shows within a directory"""

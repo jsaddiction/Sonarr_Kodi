@@ -338,7 +338,7 @@ class LibraryManager:
         Returns:
             bool: True if the episode was removed
         """
-        self.log.info("Removing episode %s", episode)
+        self.log.info("Removing episode '%s'", episode)
         for host in self.hosts:
             if host.remove_episode(episode.episode_id):
                 return True
@@ -390,7 +390,7 @@ class LibraryManager:
         for _ in range(3):
             for host in self.hosts:
                 for show in [x for x in shows if x not in removed_shows]:
-                    if host.remove_tvshow(show.show_id):
+                    if host.remove_tvshow(show):
                         removed_shows.add(show)
 
                 if len(shows) == len(removed_shows):
@@ -409,10 +409,14 @@ class LibraryManager:
         Returns:
             list[ShowDetails]: Shows gathered from the library.
         """
+        self.log.info("Getting shows from directory: %s", directory)
         for host in self.hosts:
             shows = host.get_shows_from_dir(directory)
             if shows:
+                self.log.debug("Found %d shows", len(shows))
                 return shows
+
+        self.log.warning("No shows found in directory: %s", directory)
 
         return []
 
