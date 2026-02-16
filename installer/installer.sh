@@ -16,6 +16,7 @@ if [ ! -d /config/scripts ]; then
 fi
 
 echo "************ Download / Update Repo ************"
+git config --global --add safe.directory /config/scripts/Sonarr_Kodi
 if [ -d /config/scripts/Sonarr_Kodi ]; then
     git -C /config/scripts/Sonarr_Kodi pull
 else
@@ -29,6 +30,7 @@ pip install -r /config/scripts/Sonarr_Kodi/requirements.txt --no-cache-dir --bre
 if [ ! -f /config/scripts/Sonarr_Kodi/settings.yaml ]; then
 	echo "********** Adding Default Config ****************"
 	cp /config/scripts/Sonarr_Kodi/src/config/default_config.yaml /config/scripts/Sonarr_Kodi/settings.yaml
+fi
 
 echo "************ Set Permissions ************"
 chmod 777 -R /config/scripts/Sonarr_Kodi
